@@ -1,5 +1,5 @@
+plugins { id 'maven-publish' }
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
 
 android {
     compileSdkVersion 30
@@ -17,17 +17,20 @@ android {
             minifyEnabled false
         }
     }
+}
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.github.Miha-x64'
+                artifactId = 'FiftyShades'
+                version = '0'
+            }
+        }
+    }
+}
 
-    defaultPublishConfig 'release'
-}
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from android.sourceSets.main.javaDirectories
-}
-artifacts {
-    archives sourcesJar
-}
-group = 'com.github.Miha-x64.FiftyShades'
 
 dependencies {
     implementation 'androidx.annotation:annotation:1.1.0'
