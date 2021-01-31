@@ -28,11 +28,14 @@ public final class RectWithShadow {
     @NonNull public static NinePatch createPatch(
         @ColorInt int fillColor, @Px int cornerRadius, @NonNull ShadowSpec shadow
     ) {
-        return createPatch(fillColor, Color.TRANSPARENT, 0f, cornerRadius, cornerRadius, shadow, null);
+        return createPatch(
+            Color.TRANSPARENT, fillColor, Color.TRANSPARENT, 0f, cornerRadius, cornerRadius, shadow, null, CornerSet.ALL
+        );
     }
 
     /**
      * Create a 9-patch containing a round rect with shadow.
+     * @param bgColor       colour under the sheet and shadow, effectively colour of paddings
      * @param fillColor     round rect fill colour
      * @param strokeColor   round rect stroke colour
      * @param strokeWidth   round rect stroke width
@@ -40,78 +43,68 @@ public final class RectWithShadow {
      * @param cornerRadiusY round rect corner radius
      * @param shadow        shadow spec
      * @param paddings      spaces between edges of shape and edges of 9-patch. Will be inferred if null
+     * @param corners       which corners should be drawn
      * @return a 9-patch
-     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN, or stroke is wider than corner radius
-     * @throws NullPointerException if shadow is null
+     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN, or stroke is wider than corner radius, or paddings are way too negative
+     * @throws NullPointerException if shadow or corners are null
      */
     @NonNull public static NinePatch createPatch(
+        @ColorInt int bgColor,
         @ColorInt int fillColor,
         @ColorInt int strokeColor, @Px float strokeWidth,
         @Px int cornerRadiusX, @Px int cornerRadiusY,
-        @NonNull ShadowSpec shadow, @Nullable Rect paddings
+        @NonNull ShadowSpec shadow, @Nullable Rect paddings,
+        @NonNull CornerSet corners
     ) {
         requireNonNegative(strokeWidth, "strokeWidth");
         requireNonNegative(cornerRadiusX, "cornerRadiusX");
         requireNonNegative(cornerRadiusY, "cornerRadiusY");
         if (strokeWidth > cornerRadiusX || strokeWidth > cornerRadiusY)
             throw new IllegalArgumentException("strokeWidth must be <= cornerRadius");
-        if (shadow == null) throw new NullPointerException("shadow must not be null");
-        if (paddings == null) paddings = shadow.inferPaddings();
+        if (paddings == null) paddings = shadow.inferPaddings(); // maybe implicit null-check for shadow
+        else if (paddings.left < -cornerRadiusX || paddings.top < -cornerRadiusY ||
+            paddings.right < -cornerRadiusX || paddings.bottom < -cornerRadiusY)
+            throw new IllegalArgumentException("negative paddings (" + paddings.flattenToString() +
+                ") are eating corners (" + cornerRadiusX + ", " + cornerRadiusY + ')');
+
+        Bitmap bitmap = Bitmap.createBitmap(
+            corners.measureWidth(paddings, cornerRadiusX), // implicit null-check for corners
+            corners.measureHeight(paddings, cornerRadiusY),
+            Bitmap.Config.ARGB_8888);
+
+        if (bgColor != Color.TRANSPARENT) bitmap.eraseColor(bgColor);
+        // I could check for (bgColor >>> 24 != 0) but I assume you have really good reason to redraw transparent pixels
+
+        Rect shape = corners.layout(paddings, cornerRadiusX, cornerRadiusY);
+        final Canvas canvas = new Canvas(bitmap);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(fillColor);
-        paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color);
-
-        int right = paddings.left + cornerRadiusX + 1 + cornerRadiusX;
-        int bottom = paddings.top + cornerRadiusY + 1 + cornerRadiusY;
-        Bitmap bitmap = Bitmap.createBitmap(right + paddings.right, bottom + paddings.bottom, Bitmap.Config.ARGB_8888);
-        final Canvas canvas = new Canvas(bitmap);
-        canvas.drawRoundRect(paddings.left, paddings.top, right, bottom, cornerRadiusX, cornerRadiusY, paint);
+        paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color); // finally, implicit null-check for shadow
+        drawRR(canvas, shape, cornerRadiusX, cornerRadiusY, paint);
         if ((strokeColor >>> 24) != 0 && strokeWidth > 0f)
-            andDrawStroke(canvas, paint, strokeColor, strokeWidth, paddings.left, paddings.top, right, bottom, cornerRadiusX, cornerRadiusY);
+            andDrawStroke(canvas, paint, strokeColor, strokeWidth, shape, cornerRadiusX, cornerRadiusY);
 
-        byte[] chunk = chunkProto.clone();
-        putLe(chunk, 12, paddings.left);
-        putLe(chunk, 16, paddings.right);
-        putLe(chunk, 20, paddings.top);
-        putLe(chunk, 24, paddings.bottom);
-        putLe(chunk, 32, paddings.left + cornerRadiusX);
-        putLe(chunk, 36, paddings.left + cornerRadiusX + 1);
-        putLe(chunk, 40, paddings.top + cornerRadiusY);
-        putLe(chunk, 44, paddings.top + cornerRadiusY + 1);
-        putLe(chunk, 64, fillColor);
-        return new NinePatch(bitmap, chunk);
+        final byte[] chunk = corners.chunk(paddings, cornerRadiusX, cornerRadiusY, bgColor, fillColor);
+        return new NinePatch(bitmap, chunk, null);
     }
-    private static void andDrawStroke(
-        Canvas canvas, Paint paint, int color, float width, int left, int top, int right, int bottom, int rx, int ry
-    ) {
+    private static void andDrawStroke(Canvas canvas, Paint paint, int color, float width, Rect bounds, int rx, int ry) {
         paint.setShadowLayer(0f, 0f, 0f, 0);
         paint.setColor(color);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(width);
-        canvas.drawRoundRect(left, top, right, bottom, rx, ry, paint);
+        drawRR(canvas, bounds, rx, ry, paint);
     }
-    private static final byte[] chunkProto = new byte[]{
-        1, /*2*xDivs=*/2, /*2*yDivs=*/2, /*colors.length=*/9,
-        0, 0, 0, 0, 0, 0, 0, 0, // unknown
-        /*paddingLeft=*/0, 0, 0, 0,
-        /*paddingRight=*/0, 0, 0, 0,
-        /*paddingTop=*/0, 0, 0, 0,
-        /*paddingBottom=*/0, 0, 0, 0,
-        0, 0, 0, 0, // unknown
-        /*xDiv[0].start=*/ 0, 0, 0, 0,
-        /*xDiv[0].stop=*/ 0, 0, 0, 0,
-        /*yDiv[0].start=*/ 0, 0, 0, 0,
-        /*yDiv[0].stop=*/ 0, 0, 0, 0,
-        /*colors[0]=*/ 1, 0, 0, 0, /*colors[1]=*/ 1, 0, 0, 0, /*colors[2]=*/ 1, 0, 0, 0,
-        /*colors[3]=*/ 1, 0, 0, 0, /*colors[4]=*/ 1, 0, 0, 0, /*colors[5]=*/ 1, 0, 0, 0,
-        /*colors[6]=*/ 1, 0, 0, 0, /*colors[7]=*/ 1, 0, 0, 0, /*colors[8]=*/ 1, 0, 0, 0,
-    };
-    private static void putLe(byte[] to, int at, int what) {
-        to[at] = (byte) (what & 0xFF);
-        to[++at] = (byte) ((what >>> 8) & 0xFF);
-        to[++at] = (byte) ((what >>> 16) & 0xFF);
-        to[++at] = (byte) ((what >>> 24) & 0xFF);
+    private static void drawRR(Canvas canvas, Rect bounds, int rx, int ry, Paint paint) {
+        if (bounds.left < bounds.right && bounds.top < bounds.bottom) {
+            canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, bounds.bottom, rx, ry, paint);
+        } else if (bounds.left > bounds.right) {
+            canvas.drawRoundRect(-rx, bounds.top, bounds.right, bounds.bottom, rx, ry, paint);
+            canvas.drawRoundRect(bounds.left, bounds.top, canvas.getWidth() + rx, bounds.bottom, rx, ry, paint);
+        } else { // top > bottom
+            canvas.drawRoundRect(bounds.left, -ry, bounds.right, bounds.bottom, rx, ry, paint);
+            canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, canvas.getHeight() + ry, rx, ry, paint);
+        }
     }
 
 }

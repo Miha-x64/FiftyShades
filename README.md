@@ -15,6 +15,6 @@ repositories {
 
 // module-level build.gradle:
 dependencies {
-    implementation('com.github.Miha-x64.FiftyShades:lib:-SNAPSHOT')
+    implementation('com.github.Miha-x64:FiftyShades:-SNAPSHOT')
 }
 ```

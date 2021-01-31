@@ -21,4 +21,12 @@ final class Numbers {
         if (f < 0) throw new IllegalArgumentException(name + " must be >= 0, got " + f);
     }
 
+    static byte[] putLe(byte[] to, int at, int what) {
+        to[at] = (byte) (what & 0xFF);
+        to[++at] = (byte) ((what >>> 8) & 0xFF);
+        to[++at] = (byte) ((what >>> 16) & 0xFF);
+        to[++at] = (byte) ((what >>> 24) & 0xFF);
+        return to;
+    }
+
 }
