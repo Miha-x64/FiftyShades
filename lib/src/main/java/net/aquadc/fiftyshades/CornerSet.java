@@ -1,6 +1,7 @@
 package net.aquadc.fiftyshades;
 
 import android.graphics.Rect;
+import android.graphics.RectF;
 import androidx.annotation.NonNull;
 
 import java.util.List;
@@ -77,8 +78,8 @@ public enum CornerSet {
             (anyBottomCorner ? cornerRadiusY + paddings.bottom : 0);
     }
 
-    @NonNull Rect layout(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY) {
-        Rect shape = new Rect(0, 0, cornerRadiusX + 1 + cornerRadiusX, cornerRadiusY + 1 + cornerRadiusY);
+    @NonNull RectF layout(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY) {
+        RectF shape = new RectF(0, 0, cornerRadiusX + 1 + cornerRadiusX, cornerRadiusY + 1 + cornerRadiusY);
         shape.offset(
             /*anyLeftCorner*/(cornersAndEdges & (1 | (1 << 6))) != 0 ? paddings.left : -cornerRadiusX,
             /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerRadiusY);

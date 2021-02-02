@@ -5,7 +5,9 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Px;
 
-import static net.aquadc.fiftyshades.Numbers.*;
+import static net.aquadc.fiftyshades.Numbers.ceil;
+import static net.aquadc.fiftyshades.Numbers.requireFinite;
+import static net.aquadc.fiftyshades.Numbers.requireNonNegative;
 
 
 public final class ShadowSpec {
@@ -62,8 +64,7 @@ public final class ShadowSpec {
             (radius != +0.0f ? Float.floatToIntBits(radius) : 0)) +
             color;
     }
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return appendColor(new StringBuilder("ShadowSpec(")
             .append("dx=").append(dx)
             .append(", dy=").append(dy)

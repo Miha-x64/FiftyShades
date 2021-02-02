@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.NinePatch;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -75,7 +76,7 @@ public final class RectWithShadow {
         if (bgColor != Color.TRANSPARENT) bitmap.eraseColor(bgColor);
         // I could check for (bgColor >>> 24 != 0) but I assume you have really good reason to redraw transparent pixels
 
-        Rect shape = corners.layout(paddings, cornerRadiusX, cornerRadiusY);
+        RectF shape = corners.layout(paddings, cornerRadiusX, cornerRadiusY);
         final Canvas canvas = new Canvas(bitmap);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -88,22 +89,36 @@ public final class RectWithShadow {
         final byte[] chunk = corners.chunk(paddings, cornerRadiusX, cornerRadiusY, bgColor, fillColor);
         return new NinePatch(bitmap, chunk, null);
     }
-    private static void andDrawStroke(Canvas canvas, Paint paint, int color, float width, Rect bounds, int rx, int ry) {
+    private static void andDrawStroke(Canvas canvas, Paint paint, int color, float width, RectF bounds, int rx, int ry) {
         paint.setShadowLayer(0f, 0f, 0f, 0);
         paint.setColor(color);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(width);
         drawRR(canvas, bounds, rx, ry, paint);
     }
-    private static void drawRR(Canvas canvas, Rect bounds, int rx, int ry, Paint paint) {
+    private static void drawRR(Canvas canvas, RectF bounds, int rx, int ry, Paint paint) {
         if (bounds.left < bounds.right && bounds.top < bounds.bottom) {
-            canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, bounds.bottom, rx, ry, paint);
+            canvas.drawRoundRect(bounds, rx, ry, paint);
         } else if (bounds.left > bounds.right) {
-            canvas.drawRoundRect(-rx, bounds.top, bounds.right, bounds.bottom, rx, ry, paint);
-            canvas.drawRoundRect(bounds.left, bounds.top, canvas.getWidth() + rx, bounds.bottom, rx, ry, paint);
+            float tmp = bounds.left;
+            bounds.left = -rx;
+            canvas.drawRoundRect(bounds, rx, ry, paint);
+            bounds.left = tmp;
+
+            tmp = bounds.right;
+            bounds.right = canvas.getWidth() + rx;
+            canvas.drawRoundRect(bounds, rx, ry, paint);
+            bounds.right = tmp;
         } else { // top > bottom
-            canvas.drawRoundRect(bounds.left, -ry, bounds.right, bounds.bottom, rx, ry, paint);
-            canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, canvas.getHeight() + ry, rx, ry, paint);
+            float tmp = bounds.top;
+            bounds.top = -ry;
+            canvas.drawRoundRect(bounds, rx, ry, paint);
+            bounds.top = tmp;
+
+            tmp = bounds.bottom;
+            bounds.bottom = canvas.getHeight() + ry;
+            canvas.drawRoundRect(bounds, rx, ry, paint);
+            bounds.bottom = tmp;
         }
     }
 
