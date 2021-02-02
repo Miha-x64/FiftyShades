@@ -7,6 +7,9 @@ import android.graphics.NinePatch;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.NinePatchDrawable;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,13 +60,65 @@ public final class RectWithShadow {
         @NonNull ShadowSpec shadow, @Nullable Rect paddings,
         @NonNull CornerSet corners
     ) {
+        if (paddings == null) paddings = shadow.inferPaddings();
+        return new NinePatch(
+            bitmap(bgColor, fillColor, strokeColor, strokeWidth, cornerRadiusX, cornerRadiusY, shadow, paddings, corners),
+            corners.chunk(paddings, cornerRadiusX, cornerRadiusY, bgColor, fillColor),
+            null
+        );
+    }
+
+    /**
+     * Create a drawable containing a stretchable shape
+     * from {@link #createPatch(int, int, ShadowSpec)}
+     * with negative insets to draw shadow out of bounds.
+     */
+    @NonNull public static Drawable createDrawable(
+        @ColorInt int fillColor, @Px int cornerRadius, @NonNull ShadowSpec shadow
+    ) {
+        return createDrawable(
+            Color.TRANSPARENT, fillColor, Color.TRANSPARENT, 0f, cornerRadius, cornerRadius, shadow, null, CornerSet.ALL
+        );
+    }
+
+    /**
+     * Create a drawable containing a stretchable shape
+     * from {@link #createPatch(int, int, int, float, int, int, ShadowSpec, Rect, CornerSet)}
+     * with negative insets to draw shadow out of bounds.
+     */
+    @NonNull public static Drawable createDrawable(
+        @ColorInt int bgColor,
+        @ColorInt int fillColor,
+        @ColorInt int strokeColor, @Px float strokeWidth,
+        @Px int cornerRadiusX, @Px int cornerRadiusY,
+        @NonNull ShadowSpec shadow, @Nullable Rect paddings,
+        @NonNull CornerSet corners
+    ) {
+        if (paddings == null) paddings = shadow.inferPaddings();
+        return new InsetDrawable(new NinePatchDrawable(
+            null,
+            createPatch(
+                bgColor, fillColor, strokeColor, strokeWidth, cornerRadiusX, cornerRadiusY, shadow, paddings, corners
+            )
+        ), -paddings.left, -paddings.top, -paddings.right, -paddings.bottom);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private static Bitmap bitmap(
+        @ColorInt int bgColor,
+        @ColorInt int fillColor,
+        @ColorInt int strokeColor, @Px float strokeWidth,
+        @Px int cornerRadiusX, @Px int cornerRadiusY,
+        @NonNull ShadowSpec shadow, @NonNull Rect paddings,
+        @NonNull CornerSet corners
+    ) {
         requireNonNegative(strokeWidth, "strokeWidth");
         requireNonNegative(cornerRadiusX, "cornerRadiusX");
         requireNonNegative(cornerRadiusY, "cornerRadiusY");
         if (strokeWidth > cornerRadiusX || strokeWidth > cornerRadiusY)
             throw new IllegalArgumentException("strokeWidth must be <= cornerRadius");
-        if (paddings == null) paddings = shadow.inferPaddings(); // maybe implicit null-check for shadow
-        else if (paddings.left < -cornerRadiusX || paddings.top < -cornerRadiusY ||
+        if (paddings.left < -cornerRadiusX || paddings.top < -cornerRadiusY ||
             paddings.right < -cornerRadiusX || paddings.bottom < -cornerRadiusY)
             throw new IllegalArgumentException("negative paddings (" + paddings.flattenToString() +
                 ") are eating corners (" + cornerRadiusX + ", " + cornerRadiusY + ')');
@@ -81,13 +136,11 @@ public final class RectWithShadow {
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(fillColor);
-        paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color); // finally, implicit null-check for shadow
+        paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color);
         drawRR(canvas, shape, cornerRadiusX, cornerRadiusY, paint);
         if ((strokeColor >>> 24) != 0 && strokeWidth > 0f)
             andDrawStroke(canvas, paint, strokeColor, strokeWidth, shape, cornerRadiusX, cornerRadiusY);
-
-        final byte[] chunk = corners.chunk(paddings, cornerRadiusX, cornerRadiusY, bgColor, fillColor);
-        return new NinePatch(bitmap, chunk, null);
+        return bitmap;
     }
     private static void andDrawStroke(Canvas canvas, Paint paint, int color, float width, RectF bounds, int rx, int ry) {
         paint.setShadowLayer(0f, 0f, 0f, 0);
