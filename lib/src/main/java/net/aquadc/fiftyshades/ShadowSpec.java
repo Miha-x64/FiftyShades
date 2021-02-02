@@ -24,13 +24,10 @@ public final class ShadowSpec {
      * @param color  colour of shadow
      * @throws IllegalArgumentException if any float is infinite or NaN, or radius is negative
      */
-    public ShadowSpec(float dx, float dy, float radius, int color) {
-        requireFinite(dx, "dx");
-        requireFinite(dy, "dy");
-        requireNonNegative(radius, "radius");
-        this.dx = dx;
-        this.dy = dy;
-        this.radius = radius;
+    public ShadowSpec(@Px float dx, @Px float dy, @Px float radius, @ColorInt int color) {
+        dx(dx);
+        dy(dy);
+        radius(radius);
         this.color = color;
     }
 
@@ -38,6 +35,20 @@ public final class ShadowSpec {
     @Px public float dy() { return dy; }
     @Px public float radius() { return radius; }
     @ColorInt public int color() { return color; }
+
+    void dx(float dx) { this.dx = requireFinite(dx, "dx"); }
+    void dy(float dy) { this.dy = requireFinite(dy, "dy"); }
+    void radius(float radius) { this.radius = requireNonNegative(radius, "radius"); }
+    boolean setFrom(@NonNull ShadowSpec original) {
+        if (equals(original))
+            return false; // nothing has changed
+
+        this.dx = original.dx;
+        this.dy = original.dy;
+        this.radius = original.radius;
+        this.color = original.color;
+        return true;
+    }
 
     @NonNull Rect inferPaddings() {
         int l, t, r, b;

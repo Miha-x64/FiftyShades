@@ -11,14 +11,20 @@ final class Numbers {
         return i;
     }
 
-    static void requireFinite(float f, String name) {
+    static float requireFinite(float f, String name) {
         if (Float.isInfinite(f) || Float.isNaN(f))
             throw new IllegalArgumentException(name + " must be finite, got " + f);
+        return f;
     }
 
-    static void requireNonNegative(float f, String name) {
+    static float requireNonNegative(float f, String name) {
         requireFinite(f, name);
         if (f < 0) throw new IllegalArgumentException(name + " must be >= 0, got " + f);
+        return f;
+    }
+    static int requireNonNegative(int i, String name) {
+        if (i < 0) throw new IllegalArgumentException(name + " must be >= 0, got " + i);
+        return i;
     }
 
     static byte[] putLe(byte[] to, int at, int what) {
