@@ -19,6 +19,7 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import net.aquadc.fiftyshades.CornerSet;
+import net.aquadc.fiftyshades.RectInnerShadow;
 import net.aquadc.fiftyshades.RectShadow;
 import net.aquadc.fiftyshades.RectWithShadow;
 import net.aquadc.fiftyshades.ShadowSpec;
@@ -39,15 +40,18 @@ public final class MainActivity extends Activity
         RadioGroup methodChooser = new RadioGroup(this);
         methodChooser.setId(android.R.id.checkbox);
         methodChooser.setOnCheckedChangeListener(this);
-        methodChooser.setOrientation(LinearLayout.HORIZONTAL);
         RadioButton rws = new RadioButton(this);
         rws.setText("RectWithShadow");
         rws.setId(android.R.id.checkbox + 1);
-        methodChooser.addView(rws, new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f));
+        methodChooser.addView(rws, new LinearLayout.LayoutParams(WRAP_CONTENT, 0, 1f));
         RadioButton rs = new RadioButton(this);
         rs.setText("Shape+RectShadow");
         rs.setId(android.R.id.checkbox + 2);
-        methodChooser.addView(rs, new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f));
+        methodChooser.addView(rs, new LinearLayout.LayoutParams(WRAP_CONTENT, 0, 1f));
+        RadioButton ris = new RadioButton(this);
+        ris.setText("Shape+RectInnerShadow");
+        ris.setId(android.R.id.checkbox + 3);
+        methodChooser.addView(ris, new LinearLayout.LayoutParams(WRAP_CONTENT, 0, 1f));
         content.addView(methodChooser, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
 
         Spinner cornerChooser = new Spinner(this);
@@ -99,33 +103,51 @@ public final class MainActivity extends Activity
     }
 
     private final RectShadow shadowDrawable = new RectShadow();
+    private final RectInnerShadow innerShadowDrawable = new RectInnerShadow();
     private void replaceShadow() {
         float dp = getResources().getDisplayMetrics().density;
-        boolean shape =
-            this.<RadioGroup>findViewById(android.R.id.checkbox).getCheckedRadioButtonId() == android.R.id.checkbox + 1;
+        int what =
+            this.<RadioGroup>findViewById(android.R.id.checkbox).getCheckedRadioButtonId() - android.R.id.checkbox - 1;
         Spinner cornerChooser = findViewById(android.R.id.selectAll);
-        cornerChooser.setEnabled(shape);
-        if (!shape) cornerChooser.setSelection(CornerSet.ALL.ordinal());
+        cornerChooser.setEnabled(what == 0);
+        if (what != 0) cornerChooser.setSelection(CornerSet.ALL.ordinal());
 
         int cornerRadius = (int) (20 * dp);
         int strokeWidth = Math.max(1, (int) (1 * dp));
-        findViewById(android.R.id.icon).setBackground(
-            shape
-                ? RectWithShadow.createDrawable(
+        Drawable d;
+        switch (what) {
+            case 0:
+                d = RectWithShadow.createDrawable(
                     Color.TRANSPARENT,
                     0xFF_DDEEFF,
                     0xFF_666666, strokeWidth,
                     cornerRadius, cornerRadius,
                     new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0xFF_7799FF),
-                null, CornerSet.VALUES.get(cornerChooser.getSelectedItemPosition())
-                )
-                : new LayerDrawable(new Drawable[]{
+                    null, CornerSet.VALUES.get(cornerChooser.getSelectedItemPosition())
+                );
+                break;
+
+            case 1:
+                d = new LayerDrawable(new Drawable[]{
                     shadowDrawable.cornerRadius(cornerRadius)
                         .shadow(new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0x80_7799FF)),
                     //            note: shadow colour is transparent here ^^
                     RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius)
-                })
-        );
+                });
+                break;
+
+            case 2:
+                d = new LayerDrawable(new Drawable[]{
+                    RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius),
+                    innerShadowDrawable.cornerRadius(cornerRadius)
+                        .shadow(new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0x80_7799FF))
+                });
+                break;
+
+            default:
+                throw new AssertionError();
+        }
+        findViewById(android.R.id.icon).setBackground(d);
     }
 
     @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

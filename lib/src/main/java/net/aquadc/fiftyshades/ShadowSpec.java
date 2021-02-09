@@ -39,15 +39,25 @@ public final class ShadowSpec {
     void dx(float dx) { this.dx = requireFinite(dx, "dx"); }
     void dy(float dy) { this.dy = requireFinite(dy, "dy"); }
     void radius(float radius) { this.radius = requireNonNegative(radius, "radius"); }
-    boolean setFrom(@NonNull ShadowSpec original) {
-        if (equals(original))
-            return false; // nothing has changed
-
-        this.dx = original.dx;
-        this.dy = original.dy;
-        this.radius = original.radius;
-        this.color = original.color;
-        return true;
+    int setFrom(@NonNull ShadowSpec original) {
+        int changes = 0;
+        if (this.dx != original.dx) {
+            this.dx = original.dx;
+            changes |= 1;
+        }
+        if (this.dy != original.dy) {
+            this.dy = original.dy;
+            changes |= 2;
+        }
+        if (this.radius != original.radius) {
+            this.radius = original.radius;
+            changes |= 4;
+        }
+        if (this.color != original.color) {
+            this.color = original.color;
+            changes |= 8;
+        }
+        return changes;
     }
 
     @NonNull Rect inferPaddings() {
