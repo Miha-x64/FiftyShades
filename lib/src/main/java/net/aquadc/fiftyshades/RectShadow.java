@@ -50,13 +50,11 @@ public final class RectShadow extends Shadow {
         super.setBounds(bounds);
 
         // quite rare cases when we're extremely small
-        boolean sdInvalid = sd != shadowDistance();
-        if (sdInvalid) edgeShader = null;
-        if (sdInvalid || corners != boundedCornerRadius()) cornerShader = null;
+        if (sd != shadowDistance() || corners != boundedCornerRadius()) cornerShader = null;
     }
 
     @Override void radiusInvalidated() { cornerShader = null; }
-    @Override void shadowOffsetInvalidated() { shadowInvalidated(); }
+    @Override void shadowOffsetInvalidated() { cornerShader = null; }
     @Override void shadowRadiusInvalidated() { shadowInvalidated(); }
     @Override void shadowColorInvalidated() { shadowInvalidated(); }
     private void shadowInvalidated() {
@@ -69,8 +67,6 @@ public final class RectShadow extends Shadow {
     private final int[] radialColors = new int[5];
     private final float[] radialPositions = { 0f, Float.NaN, Float.NaN, Float.NaN, 1f };
     private RadialGradient cornerShader;
-    private final int[] linearColors = new int[3];
-    private final float[] linearPositions = { 0f, Float.NaN, 1f };
     private LinearGradient edgeShader;
     @Override public void draw(@NonNull Canvas canvas) {
         if (Color.alpha(state.shadow.color) == 0) return;
@@ -139,7 +135,7 @@ public final class RectShadow extends Shadow {
     }
 
     private void drawEdges(Canvas canvas, int cornerRadius, int width, int height, float shadowDistance) {
-        if (edgeShader == null) buildEdgeShader(shadowDistance);
+        if (edgeShader == null) buildEdgeShader();
         paint.setShader(edgeShader);
 
         float shRad = state.shadow.radius;
@@ -154,13 +150,8 @@ public final class RectShadow extends Shadow {
         canvas.rotate(angle, halfMinSize, halfMinSize);
         canvas.drawRect(cornerRadius, -shRad, height - cornerRadius, shadowDistance, paint);
     }
-    private void buildEdgeShader(float shadowDistance) {
+    private void buildEdgeShader() {
         int shCol = state.shadow.color;
-        linearColors[0] = 0xFFFFFF & shCol;
-        linearColors[1] = linearColors[2] = shCol;
-        float shRad = state.shadow.radius;
-        float gSize = shRad + shadowDistance;
-        linearPositions[1] = shRad / gSize;
-        edgeShader = new LinearGradient(0f, -shRad, 0f, shadowDistance, linearColors, linearPositions, Shader.TileMode.CLAMP);
+        edgeShader = new LinearGradient(0f, -state.shadow.radius, 0f, 0f, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
     }
 }
