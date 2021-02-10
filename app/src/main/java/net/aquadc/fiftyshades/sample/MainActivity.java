@@ -115,6 +115,7 @@ public final class MainActivity extends Activity
         int cornerRadius = (int) (20 * dp);
         int strokeWidth = Math.max(1, (int) (1 * dp));
         Drawable d;
+        ShadowSpec shadow = new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0xFF_7799FF);
         switch (what) {
             case 0:
                 d = RectWithShadow.createDrawable(
@@ -122,16 +123,14 @@ public final class MainActivity extends Activity
                     0xFF_DDEEFF,
                     0xFF_666666, strokeWidth,
                     cornerRadius, cornerRadius,
-                    new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0xFF_7799FF),
+                    shadow,
                     null, CornerSet.VALUES.get(cornerChooser.getSelectedItemPosition())
                 );
                 break;
 
             case 1:
                 d = new LayerDrawable(new Drawable[]{
-                    shadowDrawable.cornerRadius(cornerRadius)
-                        .shadow(new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0x80_7799FF)),
-                    //            note: shadow colour is transparent here ^^
+                    shadowDrawable.cornerRadius(cornerRadius).shadow(shadow),
                     RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius)
                 });
                 break;
@@ -139,8 +138,7 @@ public final class MainActivity extends Activity
             case 2:
                 d = new LayerDrawable(new Drawable[]{
                     RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius),
-                    innerShadowDrawable.cornerRadius(cornerRadius)
-                        .shadow(new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0x80_7799FF))
+                    innerShadowDrawable.cornerRadius(cornerRadius).shadow(shadow)
                 });
                 break;
 

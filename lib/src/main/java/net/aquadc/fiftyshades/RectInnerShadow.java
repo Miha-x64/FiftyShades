@@ -190,9 +190,9 @@ public final class RectInnerShadow extends Shadow {
             radialColors[0] = radialColors[1] = 0xFFFFFF & shCol;
             radialColors[2] = shCol;
             radialPositions[1] = 1 - shRad / cornerRad;
-            cornerShader = new RadialGradient(cornerRad, cornerRad, cornerRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
+            cornerShader = new RadialGradient(cornerRad, cornerRad, 2*cornerRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
         } else {
-            cornerShader = new RadialGradient(shRad, shRad, shRad, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
+            cornerShader = new RadialGradient(shRad, shRad, 2*shRad, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
         }
     }
     private void buildCornerPaths(int cornerD, int d, ShadowSpec shadow) {
@@ -228,10 +228,10 @@ public final class RectInnerShadow extends Shadow {
         ShadowSpec shadow = state.shadow;
         float rad = shadow.radius;
         int col = shadow.color, tra = 0xFFFFFF & col;
-        edgeShaders[0] = new LinearGradient(0f, 0f, rad, 0f, col, tra, Shader.TileMode.CLAMP);
-        edgeShaders[1] = new LinearGradient(0f, 0f, 0f, rad, col, tra, Shader.TileMode.CLAMP);
-        edgeShaders[2] = new LinearGradient(d - rad, 0f, d, 0f, tra, col, Shader.TileMode.CLAMP);
-        edgeShaders[3] = new LinearGradient(0f, d - rad, 0f, d, tra, col, Shader.TileMode.CLAMP);
+        edgeShaders[0] = new LinearGradient(-rad, 0f, rad, 0f, col, tra, Shader.TileMode.CLAMP);
+        edgeShaders[1] = new LinearGradient(0f, -rad, 0f, rad, col, tra, Shader.TileMode.CLAMP);
+        edgeShaders[2] = new LinearGradient(d - rad, 0f, d + rad, 0f, tra, col, Shader.TileMode.CLAMP);
+        edgeShaders[3] = new LinearGradient(0f, d - rad, 0f, d + rad, tra, col, Shader.TileMode.CLAMP);
     }
 
 }

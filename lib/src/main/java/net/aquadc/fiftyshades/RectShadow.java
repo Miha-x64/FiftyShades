@@ -64,8 +64,8 @@ public final class RectShadow extends Shadow {
 
     // drawing
 
-    private final int[] radialColors = new int[5];
-    private final float[] radialPositions = { 0f, Float.NaN, Float.NaN, Float.NaN, 1f };
+    private final int[] radialColors = new int[4];
+    private final float[] radialPositions = { 0f, Float.NaN, Float.NaN, 1f };
     private RadialGradient cornerShader;
     private LinearGradient edgeShader;
     @Override public void draw(@NonNull Canvas canvas) {
@@ -117,11 +117,16 @@ public final class RectShadow extends Shadow {
     }
     private void buildCornerShader(int cornerRadius, float shadowDistance, float gRad) {
         int shCol = state.shadow.color;
-        radialColors[0] = radialColors[1] = radialColors[4] = 0xFFFFFF & shCol;
-        radialColors[2] = radialColors[3] = shCol;
+        float shD = 2 * state.shadow.radius;
+        // [0] center is fully transparent
+        // [1] is still under shape corner, transparent
+        // [2] is near corner, shadow has maximum opacity here
+        // [3] is far away, fully transparent
+        int transparent = 0xFFFFFF & shCol;
+        radialColors[0] = radialColors[1] = radialColors[3] = transparent;
+        radialColors[2] = (((int) (Color.alpha(shCol) * min((cornerRadius + shadowDistance) / shD, 1f))) << 24) | transparent ;
         radialPositions[1] = (cornerRadius - shadowDistance - .66f) / gRad;
         radialPositions[2] = (cornerRadius - shadowDistance + .34f) / gRad; // this gives us nice inner edge even without anti-alias
-        radialPositions[3] = cornerRadius / gRad;
         cornerShader = new RadialGradient(cornerRadius, cornerRadius, gRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
     }
     private void drawCorner(
@@ -152,6 +157,7 @@ public final class RectShadow extends Shadow {
     }
     private void buildEdgeShader() {
         int shCol = state.shadow.color;
-        edgeShader = new LinearGradient(0f, -state.shadow.radius, 0f, 0f, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
+        float shRad = state.shadow.radius;
+        edgeShader = new LinearGradient(0f, -shRad, 0f, shRad, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
     }
 }
