@@ -35,4 +35,15 @@ final class Numbers {
         return to;
     }
 
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    static StringBuilder appendColor(StringBuilder to, int color) {
+        to.append('#');
+        if ((((long) color) & 0xFF000000L) != 0xFF000000L) {
+            to.append(HEX[color >>> 28 & 15]).append(HEX[color >>> 24 & 15]);
+        }
+        return to.append(HEX[(color >>> 20) & 15]).append(HEX[(color >>> 16) & 15])
+            .append(HEX[(color >>> 12) & 15]).append(HEX[(color >>> 8) & 15])
+            .append(HEX[(color >>> 4) & 15]).append(HEX[color & 15]);
+    }
+
 }

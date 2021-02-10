@@ -5,11 +5,15 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Px;
 
+import static net.aquadc.fiftyshades.Numbers.appendColor;
 import static net.aquadc.fiftyshades.Numbers.ceil;
 import static net.aquadc.fiftyshades.Numbers.requireFinite;
 import static net.aquadc.fiftyshades.Numbers.requireNonNegative;
 
 
+/**
+ * Shadow properties.
+ */
 public final class ShadowSpec {
     @Px float dx;
     @Px float dy;
@@ -86,21 +90,11 @@ public final class ShadowSpec {
             color;
     }
     @Override public String toString() {
-        return appendColor(new StringBuilder("ShadowSpec(")
-            .append("dx=").append(dx)
+        return appendColor(new StringBuilder("ShadowSpec")
+            .append("(dx=").append(dx)
             .append(", dy=").append(dy)
             .append(", radius=").append(radius)
             .append(", color="), color)
             .append(')').toString();
-    }
-    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
-    private static StringBuilder appendColor(StringBuilder to, int color) {
-        to.append('#');
-        if ((((long) color) & 0xFF000000L) != 0xFF000000L) {
-            to.append(HEX[color >>> 28 & 15]).append(HEX[color >>> 24 & 15]);
-        }
-        return to.append(HEX[(color >>> 20) & 15]).append(HEX[(color >>> 16) & 15])
-            .append(HEX[(color >>> 12) & 15]).append(HEX[(color >>> 8) & 15])
-            .append(HEX[(color >>> 4) & 15]).append(HEX[color & 15]);
     }
 }

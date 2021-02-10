@@ -21,6 +21,7 @@ import android.widget.Spinner;
 import net.aquadc.fiftyshades.CornerSet;
 import net.aquadc.fiftyshades.RectInnerShadow;
 import net.aquadc.fiftyshades.RectShadow;
+import net.aquadc.fiftyshades.RectSpec;
 import net.aquadc.fiftyshades.RectWithShadow;
 import net.aquadc.fiftyshades.ShadowSpec;
 
@@ -120,9 +121,7 @@ public final class MainActivity extends Activity
             case 0:
                 d = RectWithShadow.createDrawable(
                     Color.TRANSPARENT,
-                    0xFF_DDEEFF,
-                    0xFF_666666, strokeWidth,
-                    cornerRadius, cornerRadius,
+                    new RectSpec(0xFF_DDEEFF, cornerRadius, 0xFF_666666, strokeWidth),
                     shadow,
                     null, CornerSet.VALUES.get(cornerChooser.getSelectedItemPosition())
                 );

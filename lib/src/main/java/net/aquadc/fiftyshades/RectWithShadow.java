@@ -15,8 +15,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
-import static net.aquadc.fiftyshades.Numbers.requireNonNegative;
-
+/**
+ * A factory of patches containing round rect drawable with shadow.
+ */
 public final class RectWithShadow {
     private RectWithShadow() {}
 
@@ -32,38 +33,31 @@ public final class RectWithShadow {
     @NonNull public static NinePatch createPatch(
         @ColorInt int fillColor, @Px int cornerRadius, @NonNull ShadowSpec shadow
     ) {
-        return createPatch(
-            Color.TRANSPARENT, fillColor, Color.TRANSPARENT, 0f, cornerRadius, cornerRadius, shadow, null, CornerSet.ALL
-        );
+        return createPatch(Color.TRANSPARENT, new RectSpec(fillColor, cornerRadius), shadow, null, CornerSet.ALL);
     }
 
     /**
      * Create a 9-patch containing a round rect with shadow.
      * @param bgColor       colour under the sheet and shadow, effectively colour of paddings
-     * @param fillColor     round rect fill colour
-     * @param strokeColor   round rect stroke colour
-     * @param strokeWidth   round rect stroke width
-     * @param cornerRadiusX round rect corner radius
-     * @param cornerRadiusY round rect corner radius
+     * @param rect          shape appearance
      * @param shadow        shadow spec
      * @param paddings      spaces between edges of shape and edges of 9-patch. Will be inferred if null
      * @param corners       which corners should be drawn
      * @return a 9-patch
      * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN, or stroke is wider than corner radius, or paddings are way too negative
-     * @throws NullPointerException if shadow or corners are null
+     * @throws NullPointerException if rect, shadow or corners are null
      */
     @NonNull public static NinePatch createPatch(
         @ColorInt int bgColor,
-        @ColorInt int fillColor,
-        @ColorInt int strokeColor, @Px float strokeWidth,
-        @Px int cornerRadiusX, @Px int cornerRadiusY,
-        @NonNull ShadowSpec shadow, @Nullable Rect paddings,
+        @NonNull RectSpec rect,
+        @NonNull ShadowSpec shadow,
+        @Nullable Rect paddings,
         @NonNull CornerSet corners
     ) {
         if (paddings == null) paddings = shadow.inferPaddings();
         return new NinePatch(
-            bitmap(bgColor, fillColor, strokeColor, strokeWidth, cornerRadiusX, cornerRadiusY, shadow, paddings, corners),
-            corners.chunk(paddings, cornerRadiusX, cornerRadiusY, bgColor, fillColor),
+            bitmap(bgColor, rect, shadow, paddings, corners),
+            corners.chunk(paddings, rect.cornerRadius, rect.cornerRadius, bgColor, rect.fillColor),
             null
         );
     }
@@ -77,69 +71,63 @@ public final class RectWithShadow {
         @ColorInt int fillColor, @Px int cornerRadius, @NonNull ShadowSpec shadow
     ) {
         return createDrawable(
-            Color.TRANSPARENT, fillColor, Color.TRANSPARENT, 0f, cornerRadius, cornerRadius, shadow, null, CornerSet.ALL
+            Color.TRANSPARENT, new RectSpec(fillColor, cornerRadius), shadow, null, CornerSet.ALL
         );
     }
 
     /**
      * Create a drawable containing a stretchable shape
-     * from {@link #createPatch(int, int, int, float, int, int, ShadowSpec, Rect, CornerSet)}
+     * from {@link #createPatch(int, RectSpec, ShadowSpec, Rect, CornerSet)}
      * with negative insets to draw shadow out of bounds.
      */
     @NonNull public static Drawable createDrawable(
         @ColorInt int bgColor,
-        @ColorInt int fillColor,
-        @ColorInt int strokeColor, @Px float strokeWidth,
-        @Px int cornerRadiusX, @Px int cornerRadiusY,
-        @NonNull ShadowSpec shadow, @Nullable Rect paddings,
+        @NonNull RectSpec rect,
+        @NonNull ShadowSpec shadow,
+        @Nullable Rect paddings,
         @NonNull CornerSet corners
     ) {
         if (paddings == null) paddings = shadow.inferPaddings();
-        return new InsetDrawable(new NinePatchDrawable(
-            null,
-            createPatch(
-                bgColor, fillColor, strokeColor, strokeWidth, cornerRadiusX, cornerRadiusY, shadow, paddings, corners
-            )
-        ), -paddings.left, -paddings.top, -paddings.right, -paddings.bottom);
+        return new InsetDrawable(
+            new NinePatchDrawable(null, createPatch(bgColor, rect, shadow, paddings, corners)),
+            -paddings.left, -paddings.top, -paddings.right, -paddings.bottom
+        );
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     private static Bitmap bitmap(
         @ColorInt int bgColor,
-        @ColorInt int fillColor,
-        @ColorInt int strokeColor, @Px float strokeWidth,
-        @Px int cornerRadiusX, @Px int cornerRadiusY,
-        @NonNull ShadowSpec shadow, @NonNull Rect paddings,
+        @NonNull RectSpec rect,
+        @NonNull ShadowSpec shadow,
+        @NonNull Rect paddings,
         @NonNull CornerSet corners
     ) {
-        requireNonNegative(strokeWidth, "strokeWidth");
-        requireNonNegative(cornerRadiusX, "cornerRadiusX");
-        requireNonNegative(cornerRadiusY, "cornerRadiusY");
-        if (strokeWidth > cornerRadiusX || strokeWidth > cornerRadiusY)
+        int cornerRadius = rect.cornerRadius;
+        if (rect.strokeWidth > cornerRadius)
             throw new IllegalArgumentException("strokeWidth must be <= cornerRadius");
-        if (paddings.left < -cornerRadiusX || paddings.top < -cornerRadiusY ||
-            paddings.right < -cornerRadiusX || paddings.bottom < -cornerRadiusY)
-            throw new IllegalArgumentException("negative paddings (" + paddings.flattenToString() +
-                ") are eating corners (" + cornerRadiusX + ", " + cornerRadiusY + ')');
+        if (paddings.left < -cornerRadius || paddings.top < -cornerRadius ||
+            paddings.right < -cornerRadius || paddings.bottom < -cornerRadius)
+            throw new IllegalArgumentException(
+                "negative paddings (" + paddings.flattenToString() + ") are eating corners (" + cornerRadius + ')');
 
         Bitmap bitmap = Bitmap.createBitmap(
-            corners.measureWidth(paddings, cornerRadiusX), // implicit null-check for corners
-            corners.measureHeight(paddings, cornerRadiusY),
+            corners.measureWidth(paddings, cornerRadius),
+            corners.measureHeight(paddings, cornerRadius),
             Bitmap.Config.ARGB_8888);
 
         if (bgColor != Color.TRANSPARENT) bitmap.eraseColor(bgColor);
         // I could check for (bgColor >>> 24 != 0) but I assume you have really good reason to redraw transparent pixels
 
-        RectF shape = corners.layout(paddings, cornerRadiusX, cornerRadiusY);
+        RectF shape = corners.layout(paddings, cornerRadius, cornerRadius);
         final Canvas canvas = new Canvas(bitmap);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(fillColor);
+        paint.setColor(rect.fillColor);
         paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color);
-        drawRR(canvas, shape, cornerRadiusX, cornerRadiusY, paint);
-        if ((strokeColor >>> 24) != 0 && strokeWidth > 0f)
-            andDrawStroke(canvas, paint, strokeColor, strokeWidth, shape, cornerRadiusX, cornerRadiusY);
+        drawRR(canvas, shape, cornerRadius, cornerRadius, paint);
+        if (rect.hasVisibleStroke())
+            andDrawStroke(canvas, paint, rect.strokeColor, rect.strokeWidth, shape, cornerRadius, cornerRadius);
         return bitmap;
     }
     private static void andDrawStroke(Canvas canvas, Paint paint, int color, float width, RectF bounds, int rx, int ry) {
