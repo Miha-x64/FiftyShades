@@ -34,4 +34,6 @@ afterEvaluate {
 
 dependencies {
     implementation 'androidx.annotation:annotation:1.1.0'
+    //noinspection GradleDependency | shut up, I'm a library
+    compileOnly 'androidx.recyclerview:recyclerview:1.0.0'
 }
