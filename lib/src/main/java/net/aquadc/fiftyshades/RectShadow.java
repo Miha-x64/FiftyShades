@@ -117,14 +117,14 @@ public final class RectShadow extends Shadow {
     }
     private void buildCornerShader(int cornerRadius, float shadowDistance, float gRad) {
         int shCol = state.shadow.color;
-        float shD = 2 * state.shadow.radius;
+        float shRad = state.shadow.radius;
         // [0] center is fully transparent
         // [1] is still under shape corner, transparent
         // [2] is near corner, shadow has maximum opacity here
         // [3] is far away, fully transparent
         int transparent = 0xFFFFFF & shCol;
         radialColors[0] = radialColors[1] = radialColors[3] = transparent;
-        radialColors[2] = (((int) (Color.alpha(shCol) * min((cornerRadius + shadowDistance) / shD, 1f))) << 24) | transparent ;
+        radialColors[2] = (((int) (Color.alpha(shCol) * min((shRad + shadowDistance) / 2 / shRad, 1f))) << 24) | transparent ;
         radialPositions[1] = (cornerRadius - shadowDistance - .66f) / gRad;
         radialPositions[2] = (cornerRadius - shadowDistance + .34f) / gRad; // this gives us nice inner edge even without anti-alias
         cornerShader = new RadialGradient(cornerRadius, cornerRadius, gRad, radialColors, radialPositions, Shader.TileMode.CLAMP);

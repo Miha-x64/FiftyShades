@@ -189,8 +189,9 @@ public final class RectInnerShadow extends Shadow {
         if (cornerRad > shRad) {
             radialColors[0] = radialColors[1] = 0xFFFFFF & shCol;
             radialColors[2] = shCol;
-            radialPositions[1] = 1 - shRad / cornerRad;
-            cornerShader = new RadialGradient(cornerRad, cornerRad, 2*cornerRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
+            float gRad = cornerRad + shRad;
+            radialPositions[1] = 1 - (shRad + shRad) / gRad;
+            cornerShader = new RadialGradient(cornerRad, cornerRad, gRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
         } else {
             cornerShader = new RadialGradient(shRad, shRad, 2*shRad, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
         }
