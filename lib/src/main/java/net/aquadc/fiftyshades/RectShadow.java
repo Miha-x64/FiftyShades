@@ -35,11 +35,11 @@ public final class RectShadow extends Shadow {
 
     // setters
 
-    public RectShadow cornerRadius(int cornerRadius) { return (RectShadow) i(0, cornerRadius); } // TODO fix artifacts for radius==0
-    public RectShadow shadowColor(@ColorInt int color) { return (RectShadow) i(1, color); }
-    public RectShadow shadowDx(@Px float dx) { return (RectShadow) f(1, dx); }
-    public RectShadow shadowDy(@Px float dy) { return (RectShadow) f(2, dy); }
-    public RectShadow shadowRadius(@Px float radius) { return (RectShadow) f(3, radius); }
+    public RectShadow cornerRadius(int cornerRadius) { return (RectShadow) super.cornerRadius(cornerRadius); } // TODO fix artifacts for radius==0
+    public RectShadow shadowColor(@ColorInt int color) { return (RectShadow) super.shadowColor(color); }
+    public RectShadow shadowDx(@Px float dx) { return (RectShadow) super.shadowDx(dx); }
+    public RectShadow shadowDy(@Px float dy) { return (RectShadow) super.shadowDy(dy); }
+    public RectShadow shadowRadius(@Px float radius) { return (RectShadow) super.shadowRadius(radius); }
     @Override public RectShadow shadow(@NonNull ShadowSpec shadow) { return (RectShadow) super.shadow(shadow); }
 
     // invalidation

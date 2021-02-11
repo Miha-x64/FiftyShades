@@ -106,6 +106,11 @@ public abstract class Shadow extends Drawable {
         return this;
     }
 
+    public Shadow cornerRadius(int cornerRadius) { return i(0, cornerRadius); }
+    public Shadow shadowColor(@ColorInt int color) { return i(1, color); }
+    public Shadow shadowDx(@Px float dx) { return f(1, dx); }
+    public Shadow shadowDy(@Px float dy) { return f(2, dy); }
+    public Shadow shadowRadius(@Px float radius) { return f(3, radius); }
     public Shadow shadow(@NonNull ShadowSpec shadow) {
         int changes = state.shadow.setFrom(shadow);
         if (changes == 0) return this;
