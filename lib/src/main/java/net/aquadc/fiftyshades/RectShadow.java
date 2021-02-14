@@ -13,7 +13,7 @@ import androidx.annotation.Px;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static net.aquadc.fiftyshades.Numbers.ceil;
+import static java.lang.Math.round;
 
 /**
  * A shadow dropped by a rectangle with rounded corners.
@@ -77,15 +77,17 @@ public final class RectShadow extends Shadow {
 
         canvas.save();
         canvas.translate(
-            (width < 0 ? bounds.centerX() : bounds.left) + state.shadow.dx,
-            (height < 0 ? bounds.centerY() : bounds.top) + state.shadow.dy
+            round((width < 0 ? bounds.centerX() : bounds.left) + state.shadow.dx),
+            round((height < 0 ? bounds.centerY() : bounds.top) + state.shadow.dy)
         ); //       ^^^ guard against drawing ugly shadow when we're squeezed. This looks quite possible in InsetDrawable
         if (width < 0) width = 0;
         if (height < 0) height = 0;
 
         float shadowDistance = shadowDistance();
         int cornerRadius = boundedCornerRadius();
-        drawCorners(canvas, cornerRadius, width, height, shadowDistance);
+        if (cornerShader == null) buildCornerShader(cornerRadius, shadowDistance, cornerRadius + state.shadow.radius);
+        drawCorners(canvas, cornerRadius, width, height);
+        if (edgeShader == null) buildEdgeShader();
         drawEdges(canvas, cornerRadius, width, height, shadowDistance);
         canvas.restore();
     }
@@ -99,12 +101,11 @@ public final class RectShadow extends Shadow {
         );
     }
 
-    private void drawCorners(Canvas canvas, int cornerRadius, int width, int height, float shadowDistance) {
+    private void drawCorners(Canvas canvas, int cornerRadius, int width, int height) {
         float shRad = state.shadow.radius;
         float gRad = cornerRadius + shRad;
-        if (cornerShader == null) buildCornerShader(cornerRadius, shadowDistance, gRad);
         paint.setShader(cornerShader);
-        int shadowRadInt = ceil(shRad);
+        int shadowRadInt = round(shRad);
         drawCorner(canvas, cornerRadius, gRad, -shadowRadInt, -shadowRadInt, cornerRadius, cornerRadius);
         int cornerDiameter = cornerRadius + cornerRadius;
         canvas.translate(width - cornerDiameter, 0f);
@@ -140,20 +141,19 @@ public final class RectShadow extends Shadow {
     }
 
     private void drawEdges(Canvas canvas, int cornerRadius, int width, int height, float shadowDistance) {
-        if (edgeShader == null) buildEdgeShader();
         paint.setShader(edgeShader);
 
-        float shRad = state.shadow.radius;
-        canvas.drawRect(cornerRadius, -shRad, width - cornerRadius, shadowDistance, paint);
+        int shRadInt = round(state.shadow.radius);
+        canvas.drawRect(cornerRadius, -shRadInt, width - cornerRadius, shadowDistance, paint);
         float angle = width > height ? -90f : 90f;
         float halfMinSize = min(width, height) / 2f;
         canvas.rotate(angle, halfMinSize, halfMinSize);
-        canvas.drawRect(cornerRadius, -shRad, height - cornerRadius, shadowDistance, paint);
+        canvas.drawRect(cornerRadius, -shRadInt, height - cornerRadius, shadowDistance, paint);
         float halfMaxSize = max(width, height) / 2f;
         canvas.rotate(angle, halfMaxSize, halfMaxSize);
-        canvas.drawRect(cornerRadius, -shRad, width - cornerRadius, shadowDistance, paint);
+        canvas.drawRect(cornerRadius, -shRadInt, width - cornerRadius, shadowDistance, paint);
         canvas.rotate(angle, halfMinSize, halfMinSize);
-        canvas.drawRect(cornerRadius, -shRad, height - cornerRadius, shadowDistance, paint);
+        canvas.drawRect(cornerRadius, -shRadInt, height - cornerRadius, shadowDistance, paint);
     }
     private void buildEdgeShader() {
         int shCol = state.shadow.color;
