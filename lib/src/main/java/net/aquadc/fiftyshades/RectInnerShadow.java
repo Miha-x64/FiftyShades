@@ -101,7 +101,8 @@ public final class RectInnerShadow extends Shadow {
     private final RectF arcBounds = new RectF(Integer.MIN_VALUE, 0, 0, 0);
     private void draw(Canvas canvas, int cornerRadius, int width, int height) {
         ShadowSpec shadow = state.shadow;
-        int r = max(cornerRadius, ceil(shadow.radius));
+        float shRad = shadow.radius/2f;
+        int r = max(cornerRadius, ceil(shRad));
         int d = 2 * r;
 
         if (cornerShader == null) buildCornerShader(cornerRadius);
@@ -113,7 +114,7 @@ public final class RectInnerShadow extends Shadow {
         int dyInt = round(shadow.dy);
         int cx = -dxInt + r, cy = -dyInt + r;
         int cyp = cy + max(0, dyInt), cyn = cy + min(0, dyInt);
-        canvas.drawRect(-dxInt, cyp, shadow.radius, height - d + cyn, paint);
+        canvas.drawRect(-dxInt, cyp, shRad, height - d + cyn, paint);
 
         int cxd = cx + dxInt, cyd = cy + dyInt;
         boolean negDx = dxInt < 0f, negDy = dyInt < 0f;
@@ -125,7 +126,7 @@ public final class RectInnerShadow extends Shadow {
 
         paint.setShader(edgeShaders[1]);
         int cxp = cx + max(0, dxInt), cxn = cx + min(0, dxInt);
-        canvas.drawRect(cxp, -dyInt, width - d + cxn, shadow.radius, paint);
+        canvas.drawRect(cxp, -dyInt, width - d + cxn, shRad, paint);
 
         canvas.translate(width - d, 0f);
         boolean posDx = dxInt > 0f;
@@ -136,7 +137,7 @@ public final class RectInnerShadow extends Shadow {
         );
 
         paint.setShader(edgeShaders[2]);
-        canvas.drawRect(d - cxp - shadow.radius, cyp, d - dxInt, height - d + cyn, paint);
+        canvas.drawRect(d - cxp - shRad, cyp, d - dxInt, height - d + cyn, paint);
 
         canvas.translate(0f, height - d);
         boolean posDy = dyInt > 0f;
@@ -148,7 +149,7 @@ public final class RectInnerShadow extends Shadow {
 
         canvas.translate(-width + d, 0f);
         paint.setShader(edgeShaders[3]);
-        canvas.drawRect(cxp, d - cyp - shadow.radius, width - d + cxn, d - dyInt, paint);
+        canvas.drawRect(cxp, d - cyp - shRad, width - d + cxn, d - dyInt, paint);
         drawCorner(canvas,
             3, -dxInt, cyd, cxd, d - dyInt,
             negDx, cxd, Integer.MIN_VALUE, Integer.MAX_VALUE, d - dyInt, 3,
@@ -189,7 +190,7 @@ public final class RectInnerShadow extends Shadow {
     private void buildCornerShader(int cornerRad) {
         ShadowSpec shadow = state.shadow;
         int shCol = shadow.color;
-        float shRad = shadow.radius;
+        float shRad = shadow.radius/2f;
         if (cornerRad > shRad) {
             radialColors[0] = radialColors[1] = 0xFFFFFF & shCol;
             radialColors[2] = shCol;
@@ -232,7 +233,7 @@ public final class RectInnerShadow extends Shadow {
     }
     private void buildEdgeShaders(int d) {
         ShadowSpec shadow = state.shadow;
-        float rad = shadow.radius;
+        float rad = shadow.radius/2f;
         int col = shadow.color, tra = 0xFFFFFF & col;
         edgeShaders[0] = new LinearGradient(-rad, 0f, rad, 0f, col, tra, Shader.TileMode.CLAMP);
         edgeShaders[1] = new LinearGradient(0f, -rad, 0f, rad, col, tra, Shader.TileMode.CLAMP);

@@ -85,7 +85,7 @@ public final class RectShadow extends Shadow {
 
         float shadowDistance = shadowDistance();
         int cornerRadius = boundedCornerRadius();
-        if (cornerShader == null) buildCornerShader(cornerRadius, shadowDistance, cornerRadius + state.shadow.radius);
+        if (cornerShader == null) buildCornerShader(cornerRadius, shadowDistance, cornerRadius + state.shadow.radius/2f);
         drawCorners(canvas, cornerRadius, width, height);
         if (edgeShader == null) buildEdgeShader();
         drawEdges(canvas, cornerRadius, width, height, shadowDistance);
@@ -103,9 +103,9 @@ public final class RectShadow extends Shadow {
 
     private void drawCorners(Canvas canvas, int cornerRadius, int width, int height) {
         float shRad = state.shadow.radius;
-        float gRad = cornerRadius + shRad;
+        float gRad = cornerRadius + shRad/2f;
         paint.setShader(cornerShader);
-        int shadowRadInt = round(shRad);
+        int shadowRadInt = round(shRad/2f);
         drawCorner(canvas, cornerRadius, gRad, -shadowRadInt, -shadowRadInt, cornerRadius, cornerRadius);
         int cornerDiameter = cornerRadius + cornerRadius;
         canvas.translate(width - cornerDiameter, 0f);
@@ -143,7 +143,7 @@ public final class RectShadow extends Shadow {
     private void drawEdges(Canvas canvas, int cornerRadius, int width, int height, float shadowDistance) {
         paint.setShader(edgeShader);
 
-        int shRadInt = round(state.shadow.radius);
+        int shRadInt = round(state.shadow.radius/2f);
         canvas.drawRect(cornerRadius, -shRadInt, width - cornerRadius, shadowDistance, paint);
         float angle = width > height ? -90f : 90f;
         float halfMinSize = min(width, height) / 2f;
@@ -157,7 +157,7 @@ public final class RectShadow extends Shadow {
     }
     private void buildEdgeShader() {
         int shCol = state.shadow.color;
-        float shRad = state.shadow.radius;
+        float shRad = state.shadow.radius/2f;
         edgeShader = new LinearGradient(0f, -shRad, 0f, shRad, 0xFFFFFF & shCol, shCol, Shader.TileMode.CLAMP);
     }
 }
