@@ -83,7 +83,7 @@ public final class MainActivity extends Activity
                         ObjectAnimator.ofPropertyValuesHolder(
                             (Object) null,
                             PropertyValuesHolder.ofFloat(DECOR_SHADOW_RADIUS, 32 * dp),
-                            PVH_ofColor(DECOR_SHADOW_COLOR, 0xFF_44AA66),
+                            PVH_ofColor(DECOR_SHADOW_COLOR, 0xFF_AAFFCC),
                             PVH_ofColor(DECOR_RECT_FILL_COLOR, 0xFF_AAFFCC),
                             PropertyValuesHolder.ofFloat(DECOR_RECT_STROKE_WIDTH, dp)
                         )
@@ -92,8 +92,8 @@ public final class MainActivity extends Activity
                         new int[0],
                         ObjectAnimator.ofPropertyValuesHolder(
                             (Object) null,
-                            PropertyValuesHolder.ofFloat(DECOR_SHADOW_RADIUS, 16 * dp),
-                            PVH_ofColor(DECOR_SHADOW_COLOR, 0x7F_000000),
+                            PropertyValuesHolder.ofFloat(DECOR_SHADOW_RADIUS, 8 * dp),
+                            PVH_ofColor(DECOR_SHADOW_COLOR, 0x66_000000),
                             PVH_ofColor(DECOR_RECT_FILL_COLOR, Color.WHITE),
                             PropertyValuesHolder.ofFloat(DECOR_RECT_STROKE_WIDTH, 0f)
                         )
