@@ -54,17 +54,14 @@ public final class RectShadow extends Shadow {
         if (height != bottom - top) verticalEdge.rewind();
 
         // quite rare cases when we're extremely small
-        if (corners != boundedCornerRadius()) cornerShader = null;
+        if (corners != boundedCornerRadius()) radiusInvalidated();
     }
 
     @Override void radiusInvalidated() { cornerShader = null; verticalEdge.rewind(); horizontalEdge.rewind(); }
     @Override void shadowOffsetInvalidated() { cornerShader = null; }
-    @Override void shadowRadiusInvalidated() { shadowInvalidated(); }
+    @Override void shadowRadiusInvalidated() { radiusInvalidated(); shadowInvalidated(); }
     @Override void shadowColorInvalidated() { shadowInvalidated(); }
-    private void shadowInvalidated() {
-        cornerShader = null;
-        edgeShader = null;
-    }
+    private void shadowInvalidated() { cornerShader = null; edgeShader = null; }
 
     // drawing
 
@@ -151,7 +148,7 @@ public final class RectShadow extends Shadow {
         canvas.rotate(angle, halfMinSize, halfMinSize);
         canvas.drawPath(verticalEdge, paint);
     }
-    private void buildEdgePath(int cornerRadius, int size1, int size2, int shRadInt, Path path) {
+    private static void buildEdgePath(int cornerRadius, int size1, int size2, int shRadInt, Path path) {
         path.moveTo(size1 / 2f, size2 / 2f);
         path.lineTo(cornerRadius, cornerRadius);
         path.lineTo(cornerRadius, -shRadInt);
