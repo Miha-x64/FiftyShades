@@ -70,12 +70,8 @@ public final class RectWithShadow {
      * from {@link #createPatch(int, int, ShadowSpec)}
      * with negative insets to draw shadow out of bounds.
      */
-    @NonNull public static Drawable createDrawable(
-        @ColorInt int fillColor, @Px int cornerRadius, @NonNull ShadowSpec shadow
-    ) {
-        return createDrawable(
-            Color.TRANSPARENT, new RectSpec(fillColor, cornerRadius), shadow, null, CornerSet.ALL
-        );
+    @NonNull public static Drawable createDrawable(@NonNull RectSpec rect, @NonNull ShadowSpec shadow) {
+        return createDrawable(Color.TRANSPARENT, rect, shadow, null, CornerSet.ALL);
     }
 
     /**
