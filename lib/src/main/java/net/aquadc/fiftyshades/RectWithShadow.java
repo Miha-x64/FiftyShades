@@ -15,6 +15,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
+import static java.lang.Math.max;
+import static net.aquadc.fiftyshades.Numbers.ceil;
+
 /**
  * A factory of patches containing round rect drawable with shadow.
  */
@@ -27,7 +30,7 @@ public final class RectWithShadow {
      * @param cornerRadius round rect corner radius
      * @param shadow       shadow spec
      * @return a 9-patch
-     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN, or stroke is wider than corner radius
+     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN
      * @throws NullPointerException if shadow is null
      */
     @NonNull public static NinePatch createPatch(
@@ -44,7 +47,7 @@ public final class RectWithShadow {
      * @param paddings      spaces between edges of shape and edges of 9-patch. Will be inferred if null
      * @param corners       which corners should be drawn
      * @return a 9-patch
-     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN, or stroke is wider than corner radius, or paddings are way too negative
+     * @throws IllegalArgumentException if strokeWidth or cornerRadius is negative, infinite, or NaN,  or paddings are way too negative
      * @throws NullPointerException if rect, shadow or corners are null
      */
     @NonNull public static NinePatch createPatch(
@@ -104,22 +107,21 @@ public final class RectWithShadow {
         @NonNull CornerSet corners
     ) {
         int cornerRadius = rect.cornerRadius;
-        if (rect.strokeWidth > cornerRadius)
-            throw new IllegalArgumentException("strokeWidth must be <= cornerRadius");
-        if (paddings.left < -cornerRadius || paddings.top < -cornerRadius ||
-            paddings.right < -cornerRadius || paddings.bottom < -cornerRadius)
+        int corner = max(cornerRadius, ceil(rect.strokeWidth));
+        if (paddings.left < -corner || paddings.top < -corner || paddings.right < -corner || paddings.bottom < -corner)
             throw new IllegalArgumentException(
-                "negative paddings (" + paddings.flattenToString() + ") are eating corners (" + cornerRadius + ')');
+                "negative paddings (" + paddings.flattenToString() + ") are eating corners (" + cornerRadius +
+                    ") or stroke (" + rect.strokeWidth + ')');
 
         Bitmap bitmap = Bitmap.createBitmap(
-            corners.measureWidth(paddings, cornerRadius, shadow),
-            corners.measureHeight(paddings, cornerRadius, shadow),
+            corners.measureWidth(paddings, corner, shadow),
+            corners.measureHeight(paddings, corner, shadow),
             Bitmap.Config.ARGB_8888);
 
         if (bgColor != Color.TRANSPARENT) bitmap.eraseColor(bgColor);
         // I could check for (bgColor >>> 24 != 0) but I assume you have really good reason to redraw transparent pixels
 
-        RectF shape = corners.layout(paddings, cornerRadius, cornerRadius, shadow);
+        RectF shape = corners.layout(paddings, corner, corner, shadow);
         final Canvas canvas = new Canvas(bitmap);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);

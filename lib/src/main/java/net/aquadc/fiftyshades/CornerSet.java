@@ -64,20 +64,20 @@ public enum CornerSet {
         cornersAndEdges = tl | (t << 1) | (tr << 2) | (r << 3) | (br << 4) | (b << 5) | (bl << 6) | (l << 7);
     }
 
-    int measureWidth(@NonNull Rect paddings, int cornerRadiusX, ShadowSpec shadow) {
+    int measureWidth(@NonNull Rect paddings, int corner, ShadowSpec shadow) {
         boolean anyLeftCorner = (cornersAndEdges & (1 | (1 << 6))) != 0;
         boolean anyHorizontalEdge = (cornersAndEdges & ((1 << 1) | (1 << 5))) != 0;
         boolean anyRightCorner = (cornersAndEdges & ((1 << 2) | (1 << 4))) != 0;
-        return measure(cornerRadiusX, shadow.dx, shadow.radius,
+        return measure(corner, shadow.dx, shadow.radius,
             anyLeftCorner, anyHorizontalEdge || this == BETWEEN_RIGHT_AND_LEFT, anyRightCorner,
             paddings.left, paddings.right
         );
     }
-    int measureHeight(@NonNull Rect paddings, int cornerRadiusY, ShadowSpec shadow) {
+    int measureHeight(@NonNull Rect paddings, int corner, ShadowSpec shadow) {
         boolean anyTopCorner = (cornersAndEdges & (1 | (1 << 2))) != 0;
         boolean anyVerticalEdge = (cornersAndEdges & ((1 << 3) | (1 << 7))) != 0;
         boolean anyBottomCorner = (cornersAndEdges & ((1 << 4) | (1 << 6))) != 0;
-        return measure(cornerRadiusY, shadow.dx, shadow.radius,
+        return measure(corner, shadow.dx, shadow.radius,
             anyTopCorner, anyVerticalEdge || this == BETWEEN_BOTTOM_AND_TOP, anyBottomCorner,
             paddings.top, paddings.bottom
         );
@@ -89,23 +89,23 @@ public enum CornerSet {
             (anyEndCorner ? -dNeg + cornerRadius + end : 0);
     }
 
-    @NonNull RectF layout(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY, ShadowSpec shadow) {
+    @NonNull RectF layout(@NonNull Rect paddings, int cornerX, int cornerY, ShadowSpec shadow) {
         int dxPos = max(0, ceil(shadow.dx + shadow.radius)), dxNeg = min(0, ceil(shadow.dx - shadow.radius)),
             dyPos = max(0, ceil(shadow.dy + shadow.radius)), dyNeg = min(0, ceil(shadow.dy - shadow.radius));
         RectF shape = new RectF(
-            0, 0, //        vvvvv       vvvvv basically we add abs(dx) unconditionally
-            cornerRadiusX + dxPos + 1 - dxNeg + cornerRadiusX,
-            cornerRadiusY + dyPos + 1 - dyNeg + cornerRadiusY
+            0, 0, //  vvvvv       vvvvv basically we add abs(dx) unconditionally
+            cornerX + dxPos + 1 - dxNeg + cornerX,
+            cornerY + dyPos + 1 - dyNeg + cornerY
         );
         shape.offset(
-            /*anyLeftCorner*/(cornersAndEdges & (1 | (1 << 6))) != 0 ? paddings.left : -cornerRadiusX - dxPos,
-            /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerRadiusY - dyPos
+            /*anyLeftCorner*/(cornersAndEdges & (1 | (1 << 6))) != 0 ? paddings.left : -cornerX - dxPos,
+            /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerY - dyPos
         );
         if (this == BETWEEN_BOTTOM_AND_TOP) {
-            shape.bottom = cornerRadiusY;
+            shape.bottom = cornerY;
             shape.top = shape.bottom + 1 + paddings.bottom + paddings.top;
         } else if (this == BETWEEN_RIGHT_AND_LEFT) {
-            shape.right = 1 + cornerRadiusX;
+            shape.right = 1 + cornerX;
             shape.left = shape.right + paddings.right + paddings.left;
         }
         return shape;
