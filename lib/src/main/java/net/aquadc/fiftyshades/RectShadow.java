@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.Shader;
@@ -35,7 +36,7 @@ public final class RectShadow extends Shadow {
 
     // setters
 
-    public RectShadow cornerRadius(int cornerRadius) { return (RectShadow) super.cornerRadius(cornerRadius); } // TODO fix artifacts for radius==0
+    public RectShadow cornerRadius(int cornerRadius) { return (RectShadow) super.cornerRadius(cornerRadius); }
     public RectShadow shadowColor(@ColorInt int color) { return (RectShadow) super.shadowColor(color); }
     public RectShadow shadowDx(@Px float dx) { return (RectShadow) super.shadowDx(dx); }
     public RectShadow shadowDy(@Px float dy) { return (RectShadow) super.shadowDy(dy); }
@@ -44,16 +45,19 @@ public final class RectShadow extends Shadow {
 
     // invalidation
 
-    @Override public void setBounds(@NonNull Rect bounds) {
-        int corners = boundedCornerRadius();
-        float sd = shadowDistance();
-        super.setBounds(bounds);
+
+    @Override public void setBounds(int left, int top, int right, int bottom) {
+        int corners = boundedCornerRadius(), width = getBounds().width(), height = getBounds().height();
+        super.setBounds(left, top, right, bottom);
+
+        if (width != right - left) horizontalEdge.rewind();
+        if (height != bottom - top) verticalEdge.rewind();
 
         // quite rare cases when we're extremely small
-        if (sd != shadowDistance() || corners != boundedCornerRadius()) cornerShader = null;
+        if (corners != boundedCornerRadius()) cornerShader = null;
     }
 
-    @Override void radiusInvalidated() { cornerShader = null; }
+    @Override void radiusInvalidated() { cornerShader = null; verticalEdge.rewind(); horizontalEdge.rewind(); }
     @Override void shadowOffsetInvalidated() { cornerShader = null; }
     @Override void shadowRadiusInvalidated() { shadowInvalidated(); }
     @Override void shadowColorInvalidated() { shadowInvalidated(); }
@@ -64,10 +68,11 @@ public final class RectShadow extends Shadow {
 
     // drawing
 
-    private final int[] radialColors = new int[4];
-    private final float[] radialPositions = { 0f, Float.NaN, Float.NaN, 1f };
+    private final int[] radialColors = new int[3];
+    private final float[] radialPositions = { 0f, Float.NaN, 1f };
     private RadialGradient cornerShader;
     private LinearGradient edgeShader;
+    private final Path horizontalEdge = new Path(), verticalEdge = new Path();
     @Override public void draw(@NonNull Canvas canvas) {
         if (Color.alpha(state.shadow.color) == 0) return;
 
@@ -84,21 +89,14 @@ public final class RectShadow extends Shadow {
         if (height < 0) height = 0;
 
         int cornerRadius = boundedCornerRadius();
-        float shadowDistance = min(shadowDistance(), cornerRadius);
-        if (cornerShader == null) buildCornerShader(cornerRadius, shadowDistance, cornerRadius + state.shadow.radius/2f);
+        if (cornerShader == null) buildCornerShader(cornerRadius, cornerRadius + state.shadow.radius/2f);
         drawCorners(canvas, cornerRadius, width, height);
         if (edgeShader == null) buildEdgeShader();
-        drawEdges(canvas, cornerRadius, width, height, shadowDistance);
+        int shRadInt = round(state.shadow.radius / 2f);
+        if (horizontalEdge.isEmpty()) buildEdgePath(cornerRadius, width, height, shRadInt, horizontalEdge);
+        if (verticalEdge.isEmpty()) buildEdgePath(cornerRadius, height, width, shRadInt, verticalEdge);
+        drawEdges(canvas, width, height);
         canvas.restore();
-    }
-    private float shadowDistance() {
-        ShadowSpec shadow = state.shadow;
-        Rect bounds = getBounds();
-        return min(
-            (float) Math.sqrt(shadow.dx * shadow.dx + shadow.dy * shadow.dy) + 1, // <-- extra pixel for nicer look
-            //      ^^^^^^^^^ Math.hypot is way slower and we don't need extreme accuracy here
-            min(bounds.width(), bounds.height()) / 2f // don't overlap self
-        );
     }
 
     private void drawCorners(Canvas canvas, int cornerRadius, int width, int height) {
@@ -116,21 +114,19 @@ public final class RectShadow extends Shadow {
         drawCorner(canvas, cornerRadius, gRad, -shadowRadInt, cornerRadius, cornerRadius, cornerDiameter + shadowRadInt);
         canvas.translate(0f, -height + cornerDiameter);
     }
-    private void buildCornerShader(int cornerRadius, float shadowDistance, float gRad) {
+    private void buildCornerShader(int cornerRadius, float gRad) {
         int shCol = state.shadow.color;
         float shRad = state.shadow.radius;
-        // [0] center is fully transparent
-        // [1] is still under shape corner, transparent
-        // [2] is near corner, shadow has maximum opacity here
-        // [3] is far away, fully transparent
         int transparent = 0xFFFFFF & shCol;
-        radialColors[0] = radialColors[1] = radialColors[3] = transparent;
-        radialColors[2] = (((int) (Color.alpha(shCol) * min(.5f + shadowDistance/shRad, 1f))) << 24) | transparent ;
-        radialPositions[1] = (cornerRadius - shadowDistance - .66f) / gRad;
-        radialPositions[2] = (cornerRadius - shadowDistance + .34f) / gRad; // this gives us nice inner edge even without anti-alias
-        cornerShader = radialPositions[1] <= 0f
-            ? new RadialGradient(cornerRadius, cornerRadius, gRad, radialColors[2], transparent, Shader.TileMode.CLAMP)
+        radialColors[0] = radialColors[1] = shCol;
+        radialColors[2] = transparent;
+        cornerShader = (radialPositions[1] = (cornerRadius - shRad/2f) / gRad) <= 0f
+            ? new RadialGradient(cornerRadius, cornerRadius, gRad, multiplyAlpha(shCol, (cornerRadius+shRad/2f)/shRad), transparent, Shader.TileMode.CLAMP)
             : new RadialGradient(cornerRadius, cornerRadius, gRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
+    }
+    private static int multiplyAlpha(int color, float alpha) {
+        System.out.println(alpha);
+        return ((int) (Color.alpha(color) * alpha)) << 24 | (0xFFFFFF & color);
     }
     private void drawCorner(
         Canvas canvas, int cornerRadius, float gradientRadius,
@@ -142,21 +138,26 @@ public final class RectShadow extends Shadow {
         canvas.restore();
     }
 
-    private void drawEdges(Canvas canvas, int cornerRadius, int width, int height, float shadowDistance) {
+    private void drawEdges(Canvas canvas, int width, int height) {
         paint.setShader(edgeShader);
-
-        float shRad = state.shadow.radius / 2f;
-        int shRadInt = round(shRad);
-        canvas.drawRect(cornerRadius, -shRadInt, width - cornerRadius, shadowDistance, paint);
+        canvas.drawPath(horizontalEdge, paint);
         float angle = width > height ? -90f : 90f;
         float halfMinSize = min(width, height) / 2f;
         canvas.rotate(angle, halfMinSize, halfMinSize);
-        canvas.drawRect(cornerRadius, -shRadInt, height - cornerRadius, shadowDistance, paint);
+        canvas.drawPath(verticalEdge, paint);
         float halfMaxSize = max(width, height) / 2f;
         canvas.rotate(angle, halfMaxSize, halfMaxSize);
-        canvas.drawRect(cornerRadius, -shRadInt, width - cornerRadius, shadowDistance, paint);
+        canvas.drawPath(horizontalEdge, paint);
         canvas.rotate(angle, halfMinSize, halfMinSize);
-        canvas.drawRect(cornerRadius, -shRadInt, height - cornerRadius, shadowDistance, paint);
+        canvas.drawPath(verticalEdge, paint);
+    }
+    private void buildEdgePath(int cornerRadius, int size1, int size2, int shRadInt, Path path) {
+        path.moveTo(size1 / 2f, size2 / 2f);
+        path.lineTo(cornerRadius, cornerRadius);
+        path.lineTo(cornerRadius, -shRadInt);
+        path.lineTo(size1 - cornerRadius, -shRadInt);
+        path.lineTo(size1 - cornerRadius, cornerRadius);
+        path.close();
     }
     private void buildEdgeShader() {
         int shCol = state.shadow.color;
