@@ -47,14 +47,12 @@ public final class RectInnerShadow extends Shadow {
 
     // invalidation
 
-    @Override public void setBounds(@NonNull Rect bounds) {
+    @Override public void setBounds(int left, int top, int right, int bottom) {
         int corners = boundedCornerRadius();
-        super.setBounds(bounds);
+        super.setBounds(left, top, right, bottom);
 
         // quite rare cases when we're extremely small
-        if (corners != boundedCornerRadius()) {
-            radiusInvalidated();
-        }
+        if (corners != boundedCornerRadius()) radiusInvalidated();
     }
 
     @Override void radiusInvalidated() {
@@ -212,14 +210,14 @@ public final class RectInnerShadow extends Shadow {
         int cyp = cy + max(0, dyInt);
         buildCornerPath(0, -dxInt, cyp, 180f, cxp, -dyInt, cxp, cyp);
         int cxn = cx + min(0, dxInt);
-        arcBounds.offset(d - arcBounds.width(), 0f);
-        buildCornerPath(1, cxn, -dyInt, -90f, -dxInt + cornerD, cyp, cxn, cyp);
+        arcBounds.offset(d - cornerD, 0f);
+        buildCornerPath(1, cxn, -dyInt, -90f, -dxInt + d, cyp, cxn, cyp);
         int cyn = cy + min(0, dyInt);
-        arcBounds.offset(0f, d - arcBounds.height());
-        buildCornerPath(2, -dxInt + cornerD, cyn, 0f, cxn, -dyInt + cornerD, cxn, cyn);
-        arcBounds.offset(-d + arcBounds.width(), 0f);
-        buildCornerPath(3, cxp, -dyInt + cornerD, 90f, -dxInt, cyn, cxp, cyn);
-        arcBounds.offset(0f, -d + arcBounds.height());
+        arcBounds.offset(0f, d - cornerD);
+        buildCornerPath(2, -dxInt + d, cyn, 0f, cxn, -dyInt + d, cxn, cyn);
+        arcBounds.offset(-d + cornerD, 0f);
+        buildCornerPath(3, cxp, -dyInt + d, 90f, -dxInt, cyn, cxp, cyn);
+        arcBounds.offset(0f, -d + cornerD);
     }
     // TODO sometimes we don't need a Path, a quarter of circle is enough
     private void buildCornerPath(int which, int sx, int sy, float sta, int nx, int ny, int cx, int cy) {
