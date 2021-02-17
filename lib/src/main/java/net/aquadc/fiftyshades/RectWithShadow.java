@@ -57,7 +57,7 @@ public final class RectWithShadow {
         if (paddings == null) paddings = shadow.inferPaddings();
         return new NinePatch(
             bitmap(bgColor, rect, shadow, paddings, corners),
-            corners.chunk(paddings, rect.cornerRadius, rect.cornerRadius, bgColor, rect.fillColor),
+            corners.chunk(paddings, rect.cornerRadius, rect.cornerRadius, shadow, bgColor, rect.fillColor),
             null
         );
     }
@@ -112,14 +112,14 @@ public final class RectWithShadow {
                 "negative paddings (" + paddings.flattenToString() + ") are eating corners (" + cornerRadius + ')');
 
         Bitmap bitmap = Bitmap.createBitmap(
-            corners.measureWidth(paddings, cornerRadius),
-            corners.measureHeight(paddings, cornerRadius),
+            corners.measureWidth(paddings, cornerRadius, shadow),
+            corners.measureHeight(paddings, cornerRadius, shadow),
             Bitmap.Config.ARGB_8888);
 
         if (bgColor != Color.TRANSPARENT) bitmap.eraseColor(bgColor);
         // I could check for (bgColor >>> 24 != 0) but I assume you have really good reason to redraw transparent pixels
 
-        RectF shape = corners.layout(paddings, cornerRadius, cornerRadius);
+        RectF shape = corners.layout(paddings, cornerRadius, cornerRadius, shadow);
         final Canvas canvas = new Canvas(bitmap);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);

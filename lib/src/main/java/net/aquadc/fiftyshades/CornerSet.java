@@ -6,8 +6,11 @@ import androidx.annotation.NonNull;
 
 import java.util.List;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
+import static net.aquadc.fiftyshades.Numbers.ceil;
 import static net.aquadc.fiftyshades.Numbers.putLe;
 
 /**
@@ -61,28 +64,43 @@ public enum CornerSet {
         cornersAndEdges = tl | (t << 1) | (tr << 2) | (r << 3) | (br << 4) | (b << 5) | (bl << 6) | (l << 7);
     }
 
-    int measureWidth(@NonNull Rect paddings, int cornerRadiusX) {
+    int measureWidth(@NonNull Rect paddings, int cornerRadiusX, ShadowSpec shadow) {
         boolean anyLeftCorner = (cornersAndEdges & (1 | (1 << 6))) != 0;
         boolean anyHorizontalEdge = (cornersAndEdges & ((1 << 1) | (1 << 5))) != 0;
         boolean anyRightCorner = (cornersAndEdges & ((1 << 2) | (1 << 4))) != 0;
-        return (anyLeftCorner ? paddings.left + cornerRadiusX : 0) +
-            (anyHorizontalEdge || this == BETWEEN_RIGHT_AND_LEFT ? 1 : 0) +
-            (anyRightCorner ? cornerRadiusX + paddings.right : 0);
+        return measure(cornerRadiusX, shadow.dx, shadow.radius,
+            anyLeftCorner, anyHorizontalEdge || this == BETWEEN_RIGHT_AND_LEFT, anyRightCorner,
+            paddings.left, paddings.right
+        );
     }
-    int measureHeight(@NonNull Rect paddings, int cornerRadiusY) {
+    int measureHeight(@NonNull Rect paddings, int cornerRadiusY, ShadowSpec shadow) {
         boolean anyTopCorner = (cornersAndEdges & (1 | (1 << 2))) != 0;
         boolean anyVerticalEdge = (cornersAndEdges & ((1 << 3) | (1 << 7))) != 0;
         boolean anyBottomCorner = (cornersAndEdges & ((1 << 4) | (1 << 6))) != 0;
-        return (anyTopCorner ? paddings.top + cornerRadiusY : 0) +
-            (anyVerticalEdge || this == BETWEEN_BOTTOM_AND_TOP ? 1 : 0) +
-            (anyBottomCorner ? cornerRadiusY + paddings.bottom : 0);
+        return measure(cornerRadiusY, shadow.dx, shadow.radius,
+            anyTopCorner, anyVerticalEdge || this == BETWEEN_BOTTOM_AND_TOP, anyBottomCorner,
+            paddings.top, paddings.bottom
+        );
+    }
+    private int measure(int cornerRadius, float d, float r, boolean anyStartCorner, boolean anyEdge, boolean anyEndCorner, int start, int end) {
+        int dPos = max(0, ceil(d + r)), dNeg = min(0, ceil(d - r));
+        return (anyStartCorner ? start + cornerRadius + dPos : 0) +
+            (anyEdge ? 1 : 0) +
+            (anyEndCorner ? -dNeg + cornerRadius + end : 0);
     }
 
-    @NonNull RectF layout(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY) {
-        RectF shape = new RectF(0, 0, cornerRadiusX + 1 + cornerRadiusX, cornerRadiusY + 1 + cornerRadiusY);
+    @NonNull RectF layout(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY, ShadowSpec shadow) {
+        int dxPos = max(0, ceil(shadow.dx + shadow.radius)), dxNeg = min(0, ceil(shadow.dx - shadow.radius)),
+            dyPos = max(0, ceil(shadow.dy + shadow.radius)), dyNeg = min(0, ceil(shadow.dy - shadow.radius));
+        RectF shape = new RectF(
+            0, 0, //        vvvvv       vvvvv basically we add abs(dx) unconditionally
+            cornerRadiusX + dxPos + 1 - dxNeg + cornerRadiusX,
+            cornerRadiusY + dyPos + 1 - dyNeg + cornerRadiusY
+        );
         shape.offset(
-            /*anyLeftCorner*/(cornersAndEdges & (1 | (1 << 6))) != 0 ? paddings.left : -cornerRadiusX,
-            /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerRadiusY);
+            /*anyLeftCorner*/(cornersAndEdges & (1 | (1 << 6))) != 0 ? paddings.left : -cornerRadiusX - dxPos,
+            /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerRadiusY - dyPos
+        );
         if (this == BETWEEN_BOTTOM_AND_TOP) {
             shape.bottom = cornerRadiusY;
             shape.top = shape.bottom + 1 + paddings.bottom + paddings.top;
@@ -94,9 +112,11 @@ public enum CornerSet {
     }
 
     private static final int[] EDGE = { 0, 1 };
-    @NonNull byte[] chunk(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY, int bgColor, int fillColor) {
-        int left = paddings.left + cornerRadiusX;
-        int top = paddings.top + cornerRadiusY;
+    @NonNull byte[] chunk(@NonNull Rect paddings, int cornerRadiusX, int cornerRadiusY, ShadowSpec shadow, int bgColor, int fillColor) {
+        int dxPos = max(0, ceil(shadow.dx + shadow.radius)), dxNeg = min(0, ceil(shadow.dx - shadow.radius)),
+            dyPos = max(0, ceil(shadow.dy + shadow.radius)), dyNeg = min(0, ceil(shadow.dy - shadow.radius));
+        int left = paddings.left + cornerRadiusX + dxPos;
+        int top = paddings.top + cornerRadiusY + dyPos;
         switch (this) {
             case TOP_LEFT:
                 return chunk(paddings, plusOne(left), plusOne(top), new int[] { 1, 1, 1, fillColor });
@@ -117,10 +137,10 @@ public enum CornerSet {
             case ALL:
                 return chunk(paddings, plusOne(left), plusOne(top), new int[] { 1, 1, 1, 1, fillColor, 1, 1, 1, 1 });
             case BETWEEN_BOTTOM_AND_TOP:
-                return chunk(paddings, plusOne(left), plusOne(cornerRadiusY + paddings.bottom),
+                return chunk(paddings, plusOne(left), plusOne(-dyNeg + cornerRadiusY + paddings.bottom),
                     new int[] { 1, 1, 1, bgColor, bgColor, bgColor, 1, 1, 1 });
             case BETWEEN_RIGHT_AND_LEFT:
-                return chunk(paddings, plusOne(cornerRadiusX + paddings.right), plusOne(top),
+                return chunk(paddings, plusOne(-dxNeg + cornerRadiusX + paddings.right), plusOne(top),
                     new int[] { 1, bgColor, 1, 1, bgColor, 1, 1, bgColor, 1 });
             default:
                 throw new AssertionError();
