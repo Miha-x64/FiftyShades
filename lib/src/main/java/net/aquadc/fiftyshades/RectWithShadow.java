@@ -137,26 +137,27 @@ public final class RectWithShadow {
         drawRR(canvas, bounds, rx, ry, paint);
     }
     private static void drawRR(Canvas canvas, RectF bounds, int rx, int ry, Paint paint) {
-        if (bounds.left < bounds.right && bounds.top < bounds.bottom) {
+        float width, height;
+        if ((width = bounds.width()) > 0f & (height = bounds.height()) > 0f) {
             canvas.drawRoundRect(bounds, rx, ry, paint);
-        } else if (bounds.left > bounds.right) {
+        } else if (width < 0) {
             float tmp = bounds.left;
-            bounds.left = -rx;
+            bounds.left = width; // *minus* width
             canvas.drawRoundRect(bounds, rx, ry, paint);
             bounds.left = tmp;
 
             tmp = bounds.right;
-            bounds.right = canvas.getWidth() + rx;
+            bounds.right = canvas.getWidth() - width; // *plus* width
             canvas.drawRoundRect(bounds, rx, ry, paint);
             bounds.right = tmp;
-        } else { // top > bottom
+        } else { // height < 0
             float tmp = bounds.top;
-            bounds.top = -ry;
+            bounds.top = height; // *minus* height
             canvas.drawRoundRect(bounds, rx, ry, paint);
             bounds.top = tmp;
 
             tmp = bounds.bottom;
-            bounds.bottom = canvas.getHeight() + ry;
+            bounds.bottom = canvas.getHeight() - height; // *plus* height
             canvas.drawRoundRect(bounds, rx, ry, paint);
             bounds.bottom = tmp;
         }
