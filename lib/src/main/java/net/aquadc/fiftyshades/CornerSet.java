@@ -102,11 +102,11 @@ public enum CornerSet {
             /*anyTopCorner*/(cornersAndEdges & (1 | (1 << 2))) != 0 ? paddings.top : -cornerY - dyPos
         );
         if (this == BETWEEN_BOTTOM_AND_TOP) {
-            shape.bottom = cornerY;
-            shape.top = shape.bottom + 1 + paddings.bottom + paddings.top;
+            shape.bottom = cornerY - dyNeg;
+            shape.top = shape.bottom + paddings.bottom + 1 + paddings.top;
         } else if (this == BETWEEN_RIGHT_AND_LEFT) {
-            shape.right = 1 + cornerX;
-            shape.left = shape.right + paddings.right + paddings.left;
+            shape.right = cornerX - dxNeg;
+            shape.left = shape.right + paddings.right + 1 + paddings.left;
         }
         return shape;
     }
