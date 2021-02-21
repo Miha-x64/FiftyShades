@@ -77,7 +77,7 @@ public enum CornerSet {
         boolean anyTopCorner = (cornersAndEdges & (1 | (1 << 2))) != 0;
         boolean anyVerticalEdge = (cornersAndEdges & ((1 << 3) | (1 << 7))) != 0;
         boolean anyBottomCorner = (cornersAndEdges & ((1 << 4) | (1 << 6))) != 0;
-        return measure(corner, shadow.dx, shadow.radius,
+        return measure(corner, shadow.dy, shadow.radius,
             anyTopCorner, anyVerticalEdge || this == BETWEEN_BOTTOM_AND_TOP, anyBottomCorner,
             paddings.top, paddings.bottom
         );
