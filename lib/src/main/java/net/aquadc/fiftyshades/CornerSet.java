@@ -2,6 +2,8 @@ package net.aquadc.fiftyshades;
 
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.InsetDrawable;
 import androidx.annotation.NonNull;
 
 import java.util.List;
@@ -172,6 +174,17 @@ public enum CornerSet {
         for (int j = 0; j < cl; i+=4, j++)
             putLe(chunk, i, colors[j]);
         return chunk;
+    }
+
+    @NonNull Drawable inset(@NonNull Drawable d, @NonNull Rect paddings) {
+        boolean nbrl = this != BETWEEN_RIGHT_AND_LEFT;
+        boolean nbbt = this != BETWEEN_BOTTOM_AND_TOP;
+        return new InsetDrawable(d,
+            nbrl && (cornersAndEdges & (1 | (1 << 6))) != 0 ? -paddings.left : 0,
+            nbbt && (cornersAndEdges & (1 | (1 << 2))) != 0 ? -paddings.top : 0,
+            nbrl && (cornersAndEdges & ((1 << 2) | (1 << 4))) != 0 ? -paddings.right : 0,
+            nbbt && (cornersAndEdges & ((1 << 4) | (1 << 6))) != 0 ? -paddings.bottom : 0
+        );
     }
 
     public static final List<CornerSet> VALUES = unmodifiableList(asList(values()));

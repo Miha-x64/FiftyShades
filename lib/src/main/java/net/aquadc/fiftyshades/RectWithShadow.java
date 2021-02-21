@@ -88,9 +88,9 @@ public final class RectWithShadow {
         @NonNull CornerSet corners
     ) {
         if (paddings == null) paddings = shadow.inferPaddings();
-        return new InsetDrawable(
+        return corners.inset(
             new NinePatchDrawable(null, createPatch(bgColor, rect, shadow, paddings, corners)),
-            -paddings.left, -paddings.top, -paddings.right, -paddings.bottom
+            paddings
         );
     }
 
