@@ -58,9 +58,10 @@ public final class RectWithShadow {
         @NonNull CornerSet corners
     ) {
         if (paddings == null) paddings = shadow.inferPaddings();
+        int corner = max(rect.cornerRadius, ceil(rect.strokeWidth));
         return new NinePatch(
             bitmap(bgColor, rect, shadow, paddings, corners),
-            corners.chunk(paddings, rect.cornerRadius, rect.cornerRadius, shadow, bgColor, rect.fillColor),
+            corners.chunk(paddings, corner, corner, shadow, bgColor, rect.fillColor),
             null
         );
     }
