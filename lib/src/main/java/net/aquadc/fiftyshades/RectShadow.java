@@ -50,8 +50,10 @@ public final class RectShadow extends Shadow {
         int corners = boundedCornerRadius(), width = getBounds().width(), height = getBounds().height();
         super.setBounds(left, top, right, bottom);
 
-        if (width != right - left) horizontalEdge.rewind();
-        if (height != bottom - top) verticalEdge.rewind();
+        if (width != right - left || height != bottom - top) {
+            horizontalEdge.rewind();
+            verticalEdge.rewind();
+        }
 
         // quite rare cases when we're extremely small
         if (corners != boundedCornerRadius()) radiusInvalidated();
