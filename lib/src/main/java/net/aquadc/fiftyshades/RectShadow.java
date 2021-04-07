@@ -124,7 +124,6 @@ public final class RectShadow extends Shadow {
             : new RadialGradient(cornerRadius, cornerRadius, gRad, radialColors, radialPositions, Shader.TileMode.CLAMP);
     }
     private static int multiplyAlpha(int color, float alpha) {
-        System.out.println(alpha);
         return ((int) (Color.alpha(color) * alpha)) << 24 | (0xFFFFFF & color);
     }
     private void drawCorner(

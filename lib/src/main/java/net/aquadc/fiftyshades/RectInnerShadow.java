@@ -89,7 +89,7 @@ public final class RectInnerShadow extends Shadow {
             (height = bounds.height()) <= 0) return; // TODO fix self-overlap for extra small dimensions
 
         canvas.save();
-        canvas.translate(round(bounds.left + shadow.dx), round(bounds.top + shadow.dy));
+        canvas.translate(bounds.left + round(shadow.dx), bounds.top + round(shadow.dy));
 
         int cornerRadius = boundedCornerRadius();
         draw(canvas, cornerRadius, width, height);
