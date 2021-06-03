@@ -20,6 +20,7 @@ import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.intBitsToFloat;
 import static net.aquadc.fiftyshades.ViewDrawablePool.scrapUnused;
 import static net.aquadc.fiftyshades.ViewDrawablePool.unsafeDrawableFor;
+import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
 
 /**
  * ItemDecoration which draws a round rect with a shadow below each item.
@@ -65,9 +66,7 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.unsafeDrawableFor;
             RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
             if (viewRect != null) fix(viewRect);
 
-            int iof = drawables.indexOfKey(System.identityHashCode(v));
-            if (iof >= 0) usedDrawables |= 1L << iof; // on hash collision we'll just mark same index twice
-            // thus, popCount(usedDrawables) <= children
+            usedDrawables |= usedMarkFor(drawables, v);
         }
         scrapUnused(drawables, scrap, usedDrawables);
     }

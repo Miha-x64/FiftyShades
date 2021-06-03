@@ -10,6 +10,12 @@ import java.util.ArrayList;
 @RequiresApi(11) final class ViewDrawablePool {
     private ViewDrawablePool() {}
 
+    static long usedMarkFor(SparseArray<?> mappings, View v) {
+        int iof = mappings.indexOfKey(System.identityHashCode(v));
+        return iof >= 0 ? 1L << iof : 0L; // on hash collision we'll just mark same index twice
+        // thus, popCount(usedDrawables) <= children
+    }
+
     static <T> void scrapUnused(SparseArray<? extends T> mapping, ArrayList<? super T> scrap, long used) {
         int drwbls = mapping.size();
         for (int index = Math.min(64, drwbls)-1; index >= 0; index--)
@@ -24,7 +30,7 @@ import java.util.ArrayList;
         mapping.removeAt(index);
     }
 
-    static <T> T unsafeDrawableFor(
+    static <T extends Drawable> T unsafeDrawableFor(
         SparseArray<T> drawables, ArrayList<? extends T> scrap, Drawable.ConstantState factory, View v
     ) {
         int key = System.identityHashCode(v);
