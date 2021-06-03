@@ -160,7 +160,7 @@ public abstract class Shadow extends Drawable {
     static final class ShadowState extends ConstantState {
         int cornerRadius; // should this be fractional? TODO decide
         final ShadowSpec shadow;
-        private final boolean inner;
+        final boolean inner;
         // do we need CornerSet here? TODO decide
         ShadowState(int cornerRadius, float dx, float dy, float radius, int color, boolean inner) {
             this.cornerRadius = cornerRadius;

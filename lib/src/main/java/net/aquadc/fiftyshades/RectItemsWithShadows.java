@@ -8,25 +8,32 @@ import android.os.Build;
 import android.util.FloatProperty;
 import android.util.IntProperty;
 import android.util.Property;
+import android.util.SparseArray;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+
 import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.intBitsToFloat;
+import static net.aquadc.fiftyshades.ViewDrawablePool.scrapUnused;
+import static net.aquadc.fiftyshades.ViewDrawablePool.unsafeDrawableFor;
 
 /**
  * ItemDecoration which draws a round rect with a shadow below each item.
  */
 @RequiresApi(11) public final class RectItemsWithShadows extends RecyclerView.ItemDecoration {
 
-    private final Shadow drawable;
+    private final Shadow.ShadowState factory;
     private final RectSpec rect;
     private final ShadowSpec shadow;
     private final Paint paint = new Paint();
+    private final SparseArray<Shadow> drawables = new SparseArray<>();
+    private final ArrayList<Shadow> scrap = new ArrayList<>(0);
     public RectItemsWithShadows(@NonNull RectSpec rect, @NonNull ShadowSpec shadow, boolean inner) {
-        this.drawable = inner ? new RectInnerShadow() : new RectShadow();
+        this.factory = new Shadow.ShadowState(0, 0f, 0f, 0f, 0, inner);
         this.rect = rect;
         this.shadow = shadow;
     }
@@ -36,27 +43,36 @@ import static java.lang.Float.intBitsToFloat;
 
     private final RectF bounds = new RectF();
     @Override public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        int children = parent.getChildCount();
 
-        // first pass: draw all the shadows
-        for (int i = 0; i < children; i++) {
+        // prepare all the drawables
+        normalize(parent);
+
+        // first pass: draw outer shadows, they could overlap each other but must not overlap fill or stroke
+        if (!factory.inner) drawOuter(c, parent);
+
+        // second pass: draw fill, inner shadow, and stroke
+        drawRemaining(c, parent);
+    }
+
+    private void normalize(RecyclerView parent) {
+        long usedDrawables = 0;
+        for (int i = 0, children = parent.getChildCount(); i < children; i++) {
             View v = parent.getChildAt(i);
+
             ShadowSpec viewShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec);
-            if (viewShadow == null) viewShadow = shadow; else fix(viewShadow);
+            if (viewShadow != null) fix(viewShadow);
 
             RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
-            if (viewRect == null) viewRect = rect; else fix(viewRect);
+            if (viewRect != null) fix(viewRect);
 
-            // draw shadow below, if outer
-            if (drawable instanceof RectShadow && (viewShadow.color >>> 24) != 0) {
-                gatherBoundsOf(v);
-                int alpha = (int) (v.getAlpha() * 255);
-                drawShadow(c, viewRect.cornerRadius, viewShadow, alpha);
-            }
+            int iof = drawables.indexOfKey(System.identityHashCode(v));
+            if (iof >= 0) usedDrawables |= 1L << iof; // on hash collision we'll just mark same index twice
+            // thus, popCount(usedDrawables) <= children
         }
-
-        // second pass: draw fill and stroke *over* outer shadow
-        for (int i = 0; i < children; i++) {
+        scrapUnused(drawables, scrap, usedDrawables);
+    }
+    private void drawOuter(Canvas c, RecyclerView parent) {
+        for (int i = 0, children = parent.getChildCount(); i < children; i++) {
             View v = parent.getChildAt(i);
             ShadowSpec viewShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec);
             if (viewShadow == null) viewShadow = shadow;
@@ -64,20 +80,46 @@ import static java.lang.Float.intBitsToFloat;
             RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
             if (viewRect == null) viewRect = rect;
 
-            gatherBoundsOf(v);
-            int alpha = (int) (v.getAlpha() * 255);
+            // draw shadow below, if outer
+            if ((viewShadow.color >>> 24) != 0) {
+                gatherBoundsOf(v);
+                Shadow drawable = unsafeDrawableFor(drawables, scrap, factory, v);
+                drawShadow(c, drawable, viewRect.cornerRadius, viewShadow, (int) (v.getAlpha() * 255));
+            }
+        }
+    }
+    private void drawRemaining(Canvas c, RecyclerView parent) {
+        for (int i = 0, children = parent.getChildCount(); i < children; i++) {
+            View v = parent.getChildAt(i);
 
-            paint.setAntiAlias(viewRect.cornerRadius > 0);
-            if (viewRect.fillColor >>> 24 != 0)
-                fill(c, alpha, viewRect.fillColor, viewRect.cornerRadius);
+            RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
+            if (viewRect == null) viewRect = rect;
 
-            // draw shadow above, if inner
-            if (drawable instanceof RectInnerShadow && (viewShadow.color >>> 24) != 0)
-                drawShadow(c, viewRect.cornerRadius, viewShadow, alpha);
+            ShadowSpec viewShadow = null;
+            boolean fill = viewRect.fillColor >>> 24 != 0;
+            boolean inner = factory.inner &&
+                (((viewShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec)) == null
+                    ? viewShadow = shadow : viewShadow
+                ).color >>> 24) != 0;
+            boolean stroke = viewRect.hasVisibleStroke();
+            if (fill || inner || stroke) {
+                gatherBoundsOf(v);
+                int alpha = (int) (v.getAlpha() * 255);
 
-            // draw stroke above inner shadow
-            if (viewRect.hasVisibleStroke())
-                stroke(c, alpha, viewRect.strokeColor, viewRect.strokeWidth, viewRect.cornerRadius);
+                paint.setAntiAlias(viewRect.cornerRadius > 0);
+                if (fill)
+                    fill(c, alpha, viewRect.fillColor, viewRect.cornerRadius);
+
+                // draw shadow above, if inner
+                if (inner) {
+                    Shadow drawable = unsafeDrawableFor(drawables, scrap, factory, v);
+                    drawShadow(c, drawable, viewRect.cornerRadius, viewShadow, alpha);
+                }
+
+                // draw stroke above inner shadow
+                if (stroke)
+                    stroke(c, alpha, viewRect.strokeColor, viewRect.strokeWidth, viewRect.cornerRadius);
+            }
         }
     }
     private void fix(ShadowSpec sh) {
@@ -112,11 +154,12 @@ import static java.lang.Float.intBitsToFloat;
     private static int withAlpha(int color, int alpha) {
         return ((Color.alpha(color) * alpha / 255) << 24) | (0xFFFFFF & color);
     }
-    private void drawShadow(Canvas c, int cornerRadius, ShadowSpec viewShadow, int alpha) {
+    private void drawShadow(Canvas c, Shadow drawable, int cornerRadius, ShadowSpec viewShadow, int alpha) {
         drawable.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
         drawable.setAlpha(alpha);
-        drawable.cornerRadius(cornerRadius).shadow(viewShadow);
-        drawable.draw(c);
+        drawable.cornerRadius(cornerRadius)
+            .shadow(viewShadow)
+            .draw(c);
     }
 
     private static final RectSpec DEFAULT_RECT = new RectSpec(Color.TRANSPARENT, 0);
