@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
     static long usedMarkFor(SparseArray<?> mappings, View v) {
         int iof = mappings.indexOfKey(System.identityHashCode(v));
-        return iof >= 0 ? 1L << iof : 0L; // on hash collision we'll just mark same index twice
+        return iof >= 0 && iof < 64 ? 1L << iof : 0L; // on hash collision we'll just mark same index twice
         // thus, popCount(usedDrawables) <= children
     }
 
