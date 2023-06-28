@@ -150,6 +150,15 @@ public final class RectShadow extends Shadow {
         canvas.drawPath(verticalEdge, paint);
     }
     private static void buildEdgePath(int cornerRadius, int size1, int size2, int shRadInt, Path path) {
+        /* These paths are needed to avoid overlapping inner parts of shadow edges.
+           ┌─────────┐
+        ┌──🮢   top   │
+        │   🮡───────🮠
+        │ l │🮡─ if we just drawRect() without making this notch,
+        │ e │   gonna see an ugly intersection under transparent bg
+        │ f │
+        │ t │
+        └─*/
         path.moveTo(size1 / 2f, size2 / 2f);
         path.lineTo(cornerRadius, cornerRadius);
         path.lineTo(cornerRadius, -shRadInt);
