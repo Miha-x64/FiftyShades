@@ -8,7 +8,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.InsetDrawable;
 import android.graphics.drawable.NinePatchDrawable;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
@@ -125,7 +124,7 @@ public final class RectWithShadow {
         paint.setColor(rect.fillColor);
         paint.setShadowLayer(shadow.radius, shadow.dx, shadow.dy, shadow.color);
         drawRR(canvas, shape, cornerRadius, cornerRadius, paint);
-        if (rect.hasVisibleStroke())
+        if (rect.hasStroke())
             andDrawStroke(canvas, paint, rect.strokeColor, rect.strokeWidth, shape, cornerRadius, cornerRadius);
         return bitmap;
     }

@@ -46,9 +46,8 @@ public final class RectSpec {
     @ColorInt public int strokeColor() { return strokeColor; }
     @Px public float strokeWidth() { return strokeWidth; }
 
-    boolean hasVisibleStroke() {
-        return (strokeColor >>> 24) != 0 && strokeWidth > 0f;
-    }
+    boolean hasFill() { return (fillColor >>> 24) != 0; }
+    boolean hasStroke() { return (strokeColor >>> 24) != 0 && strokeWidth > 0f; }
 
     @Override public boolean equals(Object o) {
         RectSpec that;

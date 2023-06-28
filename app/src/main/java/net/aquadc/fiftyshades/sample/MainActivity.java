@@ -28,6 +28,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import jp.wasabeef.recyclerview.animators.LandingAnimator;
 import net.aquadc.fiftyshades.CornerSet;
 import net.aquadc.fiftyshades.RectInnerShadow;
 import net.aquadc.fiftyshades.RectItemsWithShadows;
@@ -56,8 +57,18 @@ public final class MainActivity extends Activity
         RecyclerView methodChooser = new RecyclerView(this);
         methodChooser.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         methodChooser.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            private int itemCount = 0; // postpone init to show animation
+            @Override public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+                if (itemCount == 0) {
+                    recyclerView.post(() -> {
+                        itemCount = 3;
+                        notifyItemRangeInserted(0, 3);
+                    });
+                }
+            }
+
             @Override public int getItemCount() {
-                return 3;
+                return itemCount;
             }
             @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TextView itemView = new TextView(parent.getContext());
@@ -127,6 +138,9 @@ public final class MainActivity extends Activity
                 new ShadowSpec(0f, 0f, 0f, Color.TRANSPARENT)
             )
         );
+        if (Build.VERSION.SDK_INT >= 21)
+            methodChooser.setItemAnimator(new LandingAnimator());
+        methodChooser.getItemAnimator().setAddDuration(1500);
         content.addView(methodChooser, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
 
         Spinner cornerChooser = new Spinner(this);

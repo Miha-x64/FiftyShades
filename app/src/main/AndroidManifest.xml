@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="net.aquadc.fiftyshades.sample">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="net.aquadc.fiftyshades.sample">
+
+    <uses-sdk tools:overrideLibrary="jp.wasabeef.recyclerview" />
 
     <application
         android:allowBackup="true"
