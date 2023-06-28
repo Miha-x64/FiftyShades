@@ -35,6 +35,12 @@ public final class ShadowSpec {
         this.color = color;
     }
 
+    ShadowSpec() {
+    }
+    ShadowSpec(ShadowSpec copyFrom) {
+        this(copyFrom.dx, copyFrom.dy, copyFrom.radius, copyFrom.color);
+    }
+
     @Px public float dx() { return dx; }
     @Px public float dy() { return dy; }
     @Px public float radius() { return radius; }

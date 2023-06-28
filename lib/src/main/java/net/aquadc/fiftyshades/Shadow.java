@@ -27,6 +27,10 @@ public abstract class Shadow extends Drawable {
         this.state = state;
         paint = new Paint(paintFlags);
     }
+    Shadow(@Px int cornerRadius, @NonNull ShadowSpec shadow, boolean inner, int paintFlags) {
+        this.state = new ShadowState(cornerRadius, shadow, inner);
+        paint = new Paint(paintFlags);
+    }
 
     // int get-set
 
@@ -153,7 +157,7 @@ public abstract class Shadow extends Drawable {
     }
     @NonNull @Override public final Drawable mutate() {
         ShadowSpec shadow = state.shadow;
-        state = new ShadowState(state.cornerRadius, shadow.dx, shadow.dy, shadow.radius, shadow.color, state.inner);
+        state = new ShadowState(state.cornerRadius, new ShadowSpec(shadow), state.inner);
         return this;
     }
 
@@ -162,9 +166,9 @@ public abstract class Shadow extends Drawable {
         final ShadowSpec shadow;
         final boolean inner;
         // do we need CornerSet here? TODO decide
-        ShadowState(int cornerRadius, float dx, float dy, float radius, int color, boolean inner) {
+        ShadowState(int cornerRadius, ShadowSpec shadow, boolean inner) {
             this.cornerRadius = cornerRadius;
-            this.shadow = new ShadowSpec(dx, dy, radius, color);
+            this.shadow = shadow;
             this.inner = inner;
         }
         @NonNull @Override public Drawable newDrawable() {

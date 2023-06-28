@@ -27,13 +27,13 @@ public final class RectInnerShadow extends Shadow {
         super(state, Paint.DITHER_FLAG | Paint.ANTI_ALIAS_FLAG);
     }
     public RectInnerShadow() {
-        this(0, 0f, 0f, 0f, Color.TRANSPARENT);
+        this(0, new ShadowSpec());
     }
     public RectInnerShadow(@Px int cornerRadius, @NonNull ShadowSpec shadow) {
-        this(cornerRadius, shadow.dx, shadow.dy, shadow.radius, shadow.color);
+        super(cornerRadius, new ShadowSpec(shadow), true, Paint.DITHER_FLAG | Paint.ANTI_ALIAS_FLAG);
     }
     public RectInnerShadow(@Px int cornerRadius, @Px float dx, @Px float dy, @Px float radius, @ColorInt int color) {
-        super(new ShadowState(cornerRadius, dx, dy, radius, color, true), Paint.DITHER_FLAG | Paint.ANTI_ALIAS_FLAG);
+        super(cornerRadius, new ShadowSpec(dx, dy, radius, color), true, Paint.DITHER_FLAG | Paint.ANTI_ALIAS_FLAG);
     }
 
     // setters

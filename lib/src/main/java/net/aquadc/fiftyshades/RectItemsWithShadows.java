@@ -34,7 +34,7 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
     private final SparseArray<Shadow> drawables = new SparseArray<>();
     private final ArrayList<Shadow> scrap = new ArrayList<>(0);
     public RectItemsWithShadows(@NonNull RectSpec rect, @NonNull ShadowSpec shadow, boolean inner) {
-        this.factory = new Shadow.ShadowState(0, 0f, 0f, 0f, 0, inner);
+        this.factory = new Shadow.ShadowState(0, new ShadowSpec(), inner);
         this.rect = rect;
         this.shadow = shadow;
     }

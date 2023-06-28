@@ -25,13 +25,13 @@ public final class RectShadow extends Shadow {
         super(state, Paint.DITHER_FLAG);
     }
     public RectShadow() {
-        this(0, 0f, 0f, 0f, Color.TRANSPARENT);
+        this(0, new ShadowSpec());
     }
     public RectShadow(@Px int cornerRadius, @NonNull ShadowSpec shadow) {
-        this(cornerRadius, shadow.dx, shadow.dy, shadow.radius, shadow.color);
+        super(cornerRadius, new ShadowSpec(shadow), false, Paint.DITHER_FLAG);
     }
     public RectShadow(@Px int cornerRadius, @Px float dx, @Px float dy, @Px float radius, @ColorInt int color) {
-        super(new ShadowState(cornerRadius, dx, dy, radius, color, false), Paint.DITHER_FLAG);
+        super(cornerRadius, new ShadowSpec(dx, dy, radius, color), false, Paint.DITHER_FLAG);
     }
 
     // setters
