@@ -27,19 +27,19 @@ final class Numbers {
         return i;
     }
 
-    static byte[] putLe(byte[] to, int at, int what) {
+    static void putLe(byte[] to, int at, int what) {
         to[at] = (byte) (what & 0xFF);
         to[++at] = (byte) ((what >>> 8) & 0xFF);
         to[++at] = (byte) ((what >>> 16) & 0xFF);
         to[++at] = (byte) ((what >>> 24) & 0xFF);
-        return to;
     }
 
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
     static StringBuilder appendColor(StringBuilder to, int color) {
         to.append('#');
-        if ((((long) color) & 0xFF000000L) != 0xFF000000L) {
-            to.append(HEX[color >>> 28 & 15]).append(HEX[color >>> 24 & 15]);
+        int alpha = color >>> 24;
+        if (alpha != 0xFF) {
+            to.append(HEX[alpha >>> 4]).append(HEX[alpha & 15]);
         }
         return to.append(HEX[(color >>> 20) & 15]).append(HEX[(color >>> 16) & 15])
             .append(HEX[(color >>> 12) & 15]).append(HEX[(color >>> 8) & 15])
