@@ -1,9 +1,5 @@
 package net.aquadc.fiftyshades.sample;
 
-import android.animation.ArgbEvaluator;
-import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
-import android.animation.StateListAnimator;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -12,7 +8,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Property;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,7 +34,7 @@ import net.aquadc.fiftyshades.ShadowSpec;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-import static net.aquadc.fiftyshades.RectItemsWithShadows.*;
+import static net.aquadc.fiftyshades.sample.StateListAnimators.shadowAnimator;
 
 
 public final class MainActivity extends Activity
@@ -87,37 +82,9 @@ public final class MainActivity extends Activity
                     }
                 });
 
-                if (Build.VERSION.SDK_INT >= 21) {
-                    StateListAnimator sla = new StateListAnimator();
-                    sla.addState(
-                        new int[] { android.R.attr.state_selected },
-                        ObjectAnimator.ofPropertyValuesHolder(
-                            (Object) null,
-                            PropertyValuesHolder.ofFloat(DECOR_SHADOW_RADIUS, 32 * dp),
-                            PVH_ofColor(DECOR_SHADOW_COLOR, 0xFF_AAFFCC),
-                            PVH_ofColor(DECOR_RECT_FILL_COLOR, 0xFF_AAFFCC),
-                            PropertyValuesHolder.ofFloat(DECOR_RECT_STROKE_WIDTH, dp)
-                        )
-                    );
-                    sla.addState(
-                        new int[0],
-                        ObjectAnimator.ofPropertyValuesHolder(
-                            (Object) null,
-                            PropertyValuesHolder.ofFloat(DECOR_SHADOW_RADIUS, 8 * dp),
-                            PVH_ofColor(DECOR_SHADOW_COLOR, 0x66_000000),
-                            PVH_ofColor(DECOR_RECT_FILL_COLOR, Color.WHITE),
-                            PropertyValuesHolder.ofFloat(DECOR_RECT_STROKE_WIDTH, 0f)
-                        )
-                    );
-                    itemView.setStateListAnimator(sla);
-                }
+                if (Build.VERSION.SDK_INT >= 21)
+                    itemView.setStateListAnimator(shadowAnimator(dp));
 
-                return holder;
-            }
-            private final ArgbEvaluator argb = new ArgbEvaluator();
-            private PropertyValuesHolder PVH_ofColor(Property<View, Integer> prop, int... colors) {
-                PropertyValuesHolder holder = PropertyValuesHolder.ofInt(prop, colors);
-                holder.setEvaluator(argb);
                 return holder;
             }
             @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
