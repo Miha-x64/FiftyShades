@@ -51,6 +51,7 @@ public final class MainActivity extends Activity
 
         RecyclerView methodChooser = new RecyclerView(this);
         methodChooser.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        float dp = getResources().getDisplayMetrics().density;
         methodChooser.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             private int itemCount = 0; // postpone init to show animation
             @Override public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
@@ -67,7 +68,6 @@ public final class MainActivity extends Activity
             }
             @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TextView itemView = new TextView(parent.getContext());
-                float dp = getResources().getDisplayMetrics().density;
                 int pad = (int) (12 * dp);
                 itemView.setPadding(pad, pad, pad, pad);
                 final RecyclerView.ViewHolder holder = new RecyclerView.ViewHolder(itemView) {};
@@ -94,7 +94,7 @@ public final class MainActivity extends Activity
             }
         });
         DividerItemDecoration divider = new DividerItemDecoration(this, LinearLayoutManager.HORIZONTAL);
-        final int spacing = (int) (16 * getResources().getDisplayMetrics().density);
+        final int spacing = (int) (16 * dp);
         divider.setDrawable(new ColorDrawable() { @Override public int getIntrinsicWidth() { return spacing; } });
         methodChooser.addItemDecoration(divider);
         methodChooser.setPadding(spacing, spacing, spacing, spacing);
@@ -120,6 +120,23 @@ public final class MainActivity extends Activity
         cornerChooser.setSelection(CornerSet.ALL.ordinal());
         content.addView(cornerChooser, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
 
+        SeekBar shadowRadiusSeeker = new SeekBar(this);
+        SeekBar cornerRadiusSeeker = new SeekBar(this);
+        LinearLayout radiiChoosers = new LinearLayout(this); {
+            shadowRadiusSeeker.setId(android.R.id.progress);
+            shadowRadiusSeeker.setMax((int) (100 * dp));
+            shadowRadiusSeeker.setProgress((int) (20 * dp));
+            shadowRadiusSeeker.setOnSeekBarChangeListener(this);
+            radiiChoosers.addView(shadowRadiusSeeker, new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f));
+
+            cornerRadiusSeeker.setId(android.R.id.secondaryProgress);
+            cornerRadiusSeeker.setMax((int) (100 * dp));
+            cornerRadiusSeeker.setProgress((int) (40 * dp));
+            cornerRadiusSeeker.setOnSeekBarChangeListener(this);
+            radiiChoosers.addView(cornerRadiusSeeker, new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f));
+        }
+        content.addView(radiiChoosers, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+
         View sample = new View(this);
         sample.setId(android.R.id.icon);
         FrameLayout sampleWrap = new FrameLayout(this);
@@ -144,6 +161,8 @@ public final class MainActivity extends Activity
             @Override public void onGlobalLayout() {
                 onProgressChanged(widthSeeker, widthSeeker.getProgress(), false);
                 onProgressChanged(heightSeeker, heightSeeker.getProgress(), false);
+                onProgressChanged(shadowRadiusSeeker, shadowRadiusSeeker.getProgress(), false);
+                onProgressChanged(cornerRadiusSeeker, cornerRadiusSeeker.getProgress(), false);
             }
         });
     }
@@ -162,13 +181,16 @@ public final class MainActivity extends Activity
     private void replaceShadow() {
         float dp = getResources().getDisplayMetrics().density;
         Spinner cornerChooser = findViewById(android.R.id.selectAll);
-        cornerChooser.setEnabled(option == 0);
+        cornerChooser.setVisibility(option == 0 ? View.VISIBLE : View.GONE);
         if (option != 0) cornerChooser.setSelection(CornerSet.ALL.ordinal());
 
-        int cornerRadius = (int) (20 * dp);
+        SeekBar shadowRadiusSeeker = this.<SeekBar>findViewById(android.R.id.progress);
+        ((View) shadowRadiusSeeker.getParent()).setVisibility(option == 0 ? View.GONE : View.VISIBLE);
+        int shadowRadius = shadowRadiusSeeker.getProgress();
+        int cornerRadius = this.<SeekBar>findViewById(android.R.id.secondaryProgress).getProgress();
         int strokeWidth = Math.max(1, (int) (1 * dp));
         Drawable d;
-        ShadowSpec shadow = new ShadowSpec(2 * dp, 3 * dp, 20 * dp, 0xFF_7799FF);
+        ShadowSpec shadow = new ShadowSpec(2 * dp, 3 * dp, shadowRadius, 0xFF_7799FF);
         switch (option) {
             case 0:
                 d = RectWithShadow.createDrawable(
@@ -206,8 +228,10 @@ public final class MainActivity extends Activity
         View parent = (View) sample.getParent();
         if (seekBar.getId() == android.R.id.text1) {
             w = parent.getWidth() * progress / 100;
-        } else {
+        } else if (seekBar.getId() == android.R.id.text2) {
             h = parent.getHeight() * progress / 100;
+        } else {
+            replaceShadow();
         }
         if (lp.width != w || lp.height != h) { // without this check we're gonna remeasure every frame
             lp.width = w;
