@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion '30.0.2'
+    namespace 'net.aquadc.fiftyshades.sample'
+    compileSdkVersion 36
 
     defaultConfig {
         applicationId 'net.aquadc.fiftyshades.sample'
         minSdkVersion 16 // I don't want both setBackgroundDrawable and setBackground
-        targetSdkVersion 33
+        targetSdkVersion 36
         versionCode 1
         versionName '1.0'
     }

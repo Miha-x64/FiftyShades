@@ -2,14 +2,11 @@ plugins { id 'maven-publish' }
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion '30.0.2'
+    namespace 'net.aquadc.fiftyshades'
+    compileSdkVersion 36
 
     defaultConfig {
         minSdkVersion 7
-        targetSdkVersion 30
-        versionCode 1
-        versionName '1.0'
     }
 
     buildTypes {
@@ -17,17 +14,17 @@ android {
             minifyEnabled false
         }
     }
-}
-afterEvaluate {
+
     publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.Miha-x64'
-                artifactId = 'FiftyShades'
-                version = '0'
-            }
+        singleVariant("release") {
+            withSourcesJar()
         }
+    }
+    lint {
+        targetSdk 36
+    }
+    testOptions {
+        targetSdk 36
     }
 }
 
