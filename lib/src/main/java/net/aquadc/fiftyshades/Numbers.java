@@ -1,6 +1,8 @@
 package net.aquadc.fiftyshades;
 
 
+import android.graphics.Color;
+
 final class Numbers {
     private Numbers() {}
 
@@ -9,6 +11,10 @@ final class Numbers {
         if (f > 0 && f > i) i++;
         else if (f < 0 && f < i) i--;
         return i;
+    }
+
+    static int multiplyAlpha(int color, float alpha) {
+        return ((int) (Color.alpha(color) * alpha)) << 24 | (0xFFFFFF & color);
     }
 
     static float requireFinite(float f, String name) {

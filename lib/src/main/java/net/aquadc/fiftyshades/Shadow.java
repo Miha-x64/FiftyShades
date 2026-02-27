@@ -15,7 +15,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 import androidx.annotation.RequiresApi;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static net.aquadc.fiftyshades.GaussianInterpolator.GAUSSIAN;
 import static net.aquadc.fiftyshades.Numbers.requireNonNegative;
 
 
@@ -128,11 +130,15 @@ public abstract class Shadow extends Drawable {
     // invalidation
 
     abstract void radiusInvalidated();
-    abstract void shadowOffsetInvalidated();
+    void shadowOffsetInvalidated() {}
     abstract void shadowRadiusInvalidated();
     abstract void shadowColorInvalidated();
 
     // drawing
+
+    static final float QUARTER_MULTIPLIER = GAUSSIAN.getInterpolation(.75f);
+    static final float MID_MULTIPLIER = GAUSSIAN.getInterpolation(.5f);
+    static final float THREE_QUARTERS_MULTIPLIER = GAUSSIAN.getInterpolation(.25f);
 
     @Override public final int getAlpha() { return paint.getAlpha(); }
     @Override public final void setAlpha(int alpha) { paint.setAlpha(alpha); }
@@ -146,8 +152,12 @@ public abstract class Shadow extends Drawable {
 
     final int boundedCornerRadius() {
         // limit corners to size we can afford:
+        return min(state.cornerRadius, maxCornerRadius());
+    }
+
+    final int maxCornerRadius() {
         Rect bounds = getBounds();
-        return min(min(bounds.width(), bounds.height()) / 2, state.cornerRadius);
+        return min(max(0, bounds.width()), max(0, bounds.height())) / 2;
     }
 
     // state
