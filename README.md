@@ -49,31 +49,40 @@ dependencies {
 ```kotlin
 RectWithShadow.createDrawable(
     RectSpec(Color.WHITE, dp(20)),
-    ShadowSpec(dp(2), dp(3), dp(20), Color.BLACK)
+    ShadowSpec(dp(2), dp(3), dp(20), Color.BLACK),
 )
 ```
 This will return a `Drawable` (a `NinePatchDrawable` wrapped in `InsetDrawable`, actually)
 with a white rectangle, round corners (20dp radius),
 and a black shadow blurred by 20dp and offset by (2dp; 3dp).
 
-Keep in mind that it will draw out of bounds,
-so `clipChildren=false` on parent layout is required.
+Pros:
+* fast drawing (it's a 9-patch)
+
+Cons:
+* requires some memory (it's a 9-patch) (avoid creating multiple; use `drawable.constantState().newDrawable()`)
+* shadow parameters can't be changed
+* screws up View paddings, need to re-assign them after setting `background`
+* draws out of bounds, `clipChildren=false` on parent layout is required
 
 ### Dynamic shadow
 
 ```kotlin
 LayerDrawable(arrayOf(
     RectShadow(dp(20), ShadowSpec(dp(2), dp(3), dp(20), Color.BLACK)),
-    RoundRectDrawable(Color.WHITE, dp(20)) // explained later
-))
+    RoundRectDrawable(Color.WHITE, dp(20)), // explained later
+)).also { it.paddingMode = LayerDrawable.PADDING_MODE_STACK } // don't nest paddings
 ```
 
-`RectShadow` draws a shadow (out of bounds, remember!)
-while RoundRectDrawable, well, it draws a round rect.
+Pros:
+* properties of `RectShadow` can be altered: `.cornerRadius(100500).shadow(nicerShadow)`
+* they are also eligible for `Animator` framework: `Shadow.{CORNER_RADIUS, SHADOW_COLOR, SHADOW_DX, SHADOW_DY, SHADOW_RADIUS}`
 
-Now you can modify properties of `RectShadow` at runtime: `.cornerRadius(100500).shadow(nicerShadow)`
+Cons:
+* multiple drawing operations
+* still out of bounds (SW/HW layers work only inside bounds, he-he)
 
-### Inner shadow
+### Dynamic inner shadow
 
 ```kotlin
 LayerDrawable(arrayOf(
@@ -85,15 +94,16 @@ LayerDrawable(arrayOf(
 Add `Inner`, make it draw *after* round rect, and that's it: inner shadow,
 known as `inset` in CSS. Interface is the same.
 
-#### Dafuq is RoundRectDrawable?
+#### Dafuq is `RoundRectDrawable`?
 
-It's just standard `GradientDrawable` (a.k.a. `<shape>`):
+It's just built-in `GradientDrawable` (a.k.a. `<shape>`):
 
 ```kotlin
 fun RoundRectDrawable(@ColorInt color: Int, @Px radius: Int): Drawable =
     GradientDrawable().apply {
-        setColor(color)
         setCornerRadius(radius)
+        // must set shape, color, or stroke AFTER radius https://twitter.com/miha_x64/status/1445927243251949576
+        setColor(color)
     }
 ```
 
