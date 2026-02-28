@@ -1,5 +1,7 @@
 package net.aquadc.fiftyshades.sample;
 
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -30,11 +32,16 @@ import net.aquadc.fiftyshades.RectItemsWithShadows;
 import net.aquadc.fiftyshades.RectShadow;
 import net.aquadc.fiftyshades.RectSpec;
 import net.aquadc.fiftyshades.RectWithShadow;
+import net.aquadc.fiftyshades.Shadow;
 import net.aquadc.fiftyshades.ShadowSpec;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-import static net.aquadc.fiftyshades.sample.StateListAnimators.shadowAnimator;
+import static net.aquadc.fiftyshades.sample.Animators.LAYOUT_HEIGHT;
+import static net.aquadc.fiftyshades.sample.Animators.LAYOUT_WIDTH;
+import static net.aquadc.fiftyshades.sample.Animators.SHAPE_CORNER_RADIUS;
+import static net.aquadc.fiftyshades.sample.Animators.playTogether;
+import static net.aquadc.fiftyshades.sample.Animators.shadowAnimator;
 
 
 public final class MainActivity extends Activity
@@ -101,8 +108,8 @@ public final class MainActivity extends Activity
         methodChooser.setClipToPadding(false);
         methodChooser.addItemDecoration(
             new RectItemsWithShadows(
-                new RectSpec(Color.TRANSPARENT, Integer.MAX_VALUE, 0x60_000000, 0f),
-                new ShadowSpec(0f, 0f, 0f, Color.TRANSPARENT)
+                new RectSpec(Color.WHITE, Integer.MAX_VALUE, 0x60_000000, 0f),
+                new ShadowSpec(0f, 0f, 6 * dp, 0x66_000000)
             )
         );
         if (Build.VERSION.SDK_INT >= 21)
@@ -163,6 +170,7 @@ public final class MainActivity extends Activity
                 onProgressChanged(heightSeeker, heightSeeker.getProgress(), false);
                 onProgressChanged(shadowRadiusSeeker, shadowRadiusSeeker.getProgress(), false);
                 onProgressChanged(cornerRadiusSeeker, cornerRadiusSeeker.getProgress(), false);
+                content.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
     }
@@ -181,68 +189,92 @@ public final class MainActivity extends Activity
     private void replaceShadow() {
         float dp = getResources().getDisplayMetrics().density;
         Spinner cornerChooser = findViewById(android.R.id.selectAll);
-        cornerChooser.setVisibility(option == 0 ? View.VISIBLE : View.GONE);
+        cornerChooser.setEnabled(option == 0);
         if (option != 0) cornerChooser.setSelection(CornerSet.ALL.ordinal());
 
         SeekBar shadowRadiusSeeker = this.<SeekBar>findViewById(android.R.id.progress);
-        ((View) shadowRadiusSeeker.getParent()).setVisibility(option == 0 ? View.GONE : View.VISIBLE);
         int shadowRadius = shadowRadiusSeeker.getProgress();
         int cornerRadius = this.<SeekBar>findViewById(android.R.id.secondaryProgress).getProgress();
         int strokeWidth = Math.max(1, (int) (1 * dp));
-        Drawable d;
-        ShadowSpec shadow = new ShadowSpec(2 * dp, 3 * dp, shadowRadius, 0xFF_7799FF);
+        View sample = findViewById(android.R.id.icon);
+        Drawable d = sample.getBackground();
+        ShadowSpec shadowSpec = new ShadowSpec(2 * dp, 3 * dp, shadowRadius, 0xFF_7799FF);
+        Drawable shadow, shape;
         switch (option) {
             case 0:
                 d = RectWithShadow.createDrawable(
                     Color.TRANSPARENT,
                     new RectSpec(0xFF_DDEEFF, cornerRadius, 0xFF_666666, strokeWidth),
-                    shadow,
+                    shadowSpec,
                     null, CornerSet.VALUES.get(cornerChooser.getSelectedItemPosition())
                 );
                 break;
 
             case 1:
+                if (d instanceof LayerDrawable &&
+                        (shadow = ((LayerDrawable) d).getDrawable(0)) instanceof RectShadow &&
+                        (shape = ((LayerDrawable) d).getDrawable(1)) instanceof GradientDrawable) {
+                    animateShadow((RectShadow) shadow, (GradientDrawable) shape, shadowRadius, cornerRadius);
+                    return;
+                }
                 d = new LayerDrawable(new Drawable[]{
-                    shadowDrawable.cornerRadius(cornerRadius).shadow(shadow),
-                    RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius)
+                    shadowDrawable.cornerRadius(cornerRadius).shadow(shadowSpec),
+                    RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius),
                 });
                 break;
 
             case 2:
+                if (d instanceof LayerDrawable &&
+                        (shape = ((LayerDrawable) d).getDrawable(0)) instanceof GradientDrawable &&
+                        (shadow = ((LayerDrawable) d).getDrawable(1)) instanceof RectInnerShadow) {
+                    animateShadow((RectInnerShadow) shadow, (GradientDrawable) shape, shadowRadius, cornerRadius);
+                    return;
+                }
                 d = new LayerDrawable(new Drawable[]{
                     RoundRectDrawable(0xFF_DDEEFF, 0xFF_666666, strokeWidth, cornerRadius),
-                    innerShadowDrawable.cornerRadius(cornerRadius).shadow(shadow)
+                    innerShadowDrawable.cornerRadius(cornerRadius).shadow(shadowSpec),
                 });
                 break;
 
             default:
                 throw new AssertionError();
         }
-        findViewById(android.R.id.icon).setBackground(d);
+        sample.setBackground(d);
     }
 
+    private Animator shadowAnim;
+    private void animateShadow(Shadow shadow, GradientDrawable shape, int shadowRadius, int cornerRadius) {
+        if (shadowAnim != null) shadowAnim.cancel();
+        shadowAnim = playTogether(
+                ObjectAnimator.ofFloat(shadow, Shadow.SHADOW_RADIUS, shadowRadius),
+                ObjectAnimator.ofInt(shadow, Shadow.CORNER_RADIUS, cornerRadius),
+                ObjectAnimator.ofFloat(shape, SHAPE_CORNER_RADIUS, cornerRadius)
+        );
+    }
+
+    Animator widthAnim;
+    Animator heightAnim;
     @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         View sample = findViewById(android.R.id.icon);
-        ViewGroup.LayoutParams lp = sample.getLayoutParams();
-        int w = lp.width, h = lp.height;
         View parent = (View) sample.getParent();
         if (seekBar.getId() == android.R.id.text1) {
-            w = parent.getWidth() * progress / 100;
+            int w = parent.getWidth() * progress / 100;
+            if (widthAnim != null) widthAnim.cancel();
+            widthAnim = ObjectAnimator.ofInt(sample, LAYOUT_WIDTH, w);
+            widthAnim.start();
         } else if (seekBar.getId() == android.R.id.text2) {
-            h = parent.getHeight() * progress / 100;
+            int h = parent.getHeight() * progress / 100;
+            if (heightAnim != null) heightAnim.cancel();
+            heightAnim = ObjectAnimator.ofInt(sample, LAYOUT_HEIGHT, h);
+            heightAnim.start();
         } else {
             replaceShadow();
-        }
-        if (lp.width != w || lp.height != h) { // without this check we're gonna remeasure every frame
-            lp.width = w;
-            lp.height = h;
-            sample.setLayoutParams(lp);
         }
     }
     @Override public void onStartTrackingTouch(SeekBar seekBar) { }
     @Override public void onStopTrackingTouch(SeekBar seekBar) { }
 
-    private static Drawable RoundRectDrawable(int color, int strokeColor, int strokeWidth, int radius) {
+    private static GradientDrawable RoundRectDrawable(int color, int strokeColor, int strokeWidth, int radius) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
         d.setCornerRadius(radius);
