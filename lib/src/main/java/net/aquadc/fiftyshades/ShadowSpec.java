@@ -97,11 +97,11 @@ public final class ShadowSpec {
             color;
     }
     @Override public String toString() {
-        return appendColor(new StringBuilder("ShadowSpec")
-            .append("(dx=").append(dx)
-            .append(", dy=").append(dy)
-            .append(", radius=").append(radius)
-            .append(", color="), color)
+        return appendColor(new StringBuilder("ShadowSpec").append('(')
+            .append("dx").append('=').append(dx).append(", ")
+            .append("dy").append('=').append(dy).append(", ")
+            .append("radius").append('=').append(radius).append(", ")
+            .append("color").append('='), color)
             .append(')').toString();
     }
 }

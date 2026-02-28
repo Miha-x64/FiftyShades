@@ -65,11 +65,13 @@ public final class RectSpec {
             (strokeWidth != +0.0f ? Float.floatToIntBits(strokeWidth) : 0);
     }
     @Override public String toString() {
-        StringBuilder sb = appendColor(new StringBuilder("RectSpec")
-            .append("(fillColor="), fillColor)
-            .append(", cornerRadius=").append(cornerRadius);
-        if (strokeColor != Color.TRANSPARENT) appendColor(sb.append(", strokeColor="), strokeColor);
-        if (strokeWidth != 0f) sb.append(", strokeWidth=").append(strokeWidth);
+        StringBuilder sb = appendColor(new StringBuilder("RectSpec").append('(')
+            .append("fillColor").append('='), fillColor).append(", ")
+            .append("cornerRadius").append('=').append(cornerRadius);
+        if (strokeColor != Color.TRANSPARENT)
+            appendColor(sb.append(", ").append("strokeColor").append('='), strokeColor);
+        if (strokeWidth != 0f)
+            sb.append(", ").append("strokeWidth").append('=').append(strokeWidth);
         return sb.append(')').toString();
     }
 }
