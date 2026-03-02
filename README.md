@@ -26,6 +26,18 @@ a poor man's elevation. Same problems as above apply plus drawing artifacts.
 It also drops shadowColor's alpha; `Drawable#setAlpha` invocations
 don't alter shadow transparency either.
 
+## Maturity & maintenance
+
+It satisfied my needs during the era of Views, but not being actively maintained now.
+
+- [x] `RectWithShadow` 9-patch for static shadows
+- [x] `RectShadow` dynamic drawable (but `spread` parameter is not supported)
+- [x] `RectInnerShadow` dynamic drawable (but it does not look Gaussian; no `spread` either; `shadow.radius=0` is buggy)
+- [x] `RectItemsWithShadows` `ItemDecoration` for `RecyclerView` with animatable properties
+      (but it doesn't allow having inner and outer shadows at the same time, and requires some fixes for correct alpha animation)
+- [ ] Fix all the stuff mentioned above? Open issue!
+- [x] There's `Modifier.dropShadow()` so you don't need me there!
+
 ## How?
 
 ```groovy
