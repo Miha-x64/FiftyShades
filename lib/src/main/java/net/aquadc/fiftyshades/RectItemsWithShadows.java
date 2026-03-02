@@ -18,12 +18,13 @@ import java.util.ArrayList;
 
 import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.intBitsToFloat;
+import static net.aquadc.fiftyshades.Numbers.multiplyAlpha;
 import static net.aquadc.fiftyshades.ViewDrawablePool.scrapUnused;
 import static net.aquadc.fiftyshades.ViewDrawablePool.unsafeDrawableFor;
 import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
 
 /**
- * ItemDecoration which draws a round rect with a shadow below each item.
+ * ItemDecoration which draws a round rect with a shadow for each item.
  */
 @RequiresApi(11) public final class RectItemsWithShadows extends RecyclerView.ItemDecoration {
 
@@ -33,14 +34,17 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
     private final Paint paint = new Paint();
     private final SparseArray<Shadow> drawables = new SparseArray<>();
     private final ArrayList<Shadow> scrap = new ArrayList<>(0);
+
+    public RectItemsWithShadows(@NonNull RectSpec rect, @NonNull ShadowSpec shadow) {
+        this(rect, shadow, false);
+    }
     public RectItemsWithShadows(@NonNull RectSpec rect, @NonNull ShadowSpec shadow, boolean inner) {
         this.factory = new Shadow.ShadowState(0, new ShadowSpec(), inner);
         this.rect = rect;
         this.shadow = shadow;
     }
-    public RectItemsWithShadows(@NonNull RectSpec rect, @NonNull ShadowSpec shadow) {
-        this(rect, shadow, false);
-    }
+
+    // DRAWING
 
     private final RectF bounds = new RectF(); // drawRoundRect(l, t, r, b, …) is 21+, we use drawRoundRect(bounds, …)
     @Override public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -73,14 +77,11 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
     private void drawOuter(Canvas c, RecyclerView parent) {
         for (int i = 0, children = parent.getChildCount(); i < children; i++) {
             View v = parent.getChildAt(i);
-            ShadowSpec viewShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec);
-            if (viewShadow == null) viewShadow = shadow;
-
+            ShadowSpec viewShadow = shadowSpecOf(v);
+            RectSpec viewRect;
             // draw shadow below, if outer
-            if ((viewShadow.color >>> 24) != 0) {
-                RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
-                if (viewRect == null) viewRect = rect;
-
+            if (viewShadow.isVisible() && // outer 0-shadow is visible only below transparent shape:
+                    !((viewRect = rectSpecOf(v)).isOpaque() && viewShadow.isZero())) {
                 bounds.set(0, 0, v.getWidth(), v.getHeight());
                 Shadow drawable = unsafeDrawableFor(drawables, scrap, factory, v);
                 c.save();
@@ -94,15 +95,11 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
     private void drawRemaining(Canvas c, RecyclerView parent) {
         for (int i = 0, children = parent.getChildCount(); i < children; i++) {
             View v = parent.getChildAt(i);
-
-            RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
-            if (viewRect == null) viewRect = rect;
-
+            RectSpec viewRect = rectSpecOf(v);
             ShadowSpec inShadow = null;
             if (factory.inner) {
-                inShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec);
-                if (inShadow == null) inShadow = shadow;
-                if (!inShadow.isVisible()) inShadow = null;
+                inShadow = shadowSpecOf(v);
+                if (!inShadow.isVisible() || inShadow.isZero()) inShadow = null;
             }
             if (viewRect.hasFill() || inShadow != null || viewRect.hasStroke()) {
                 drawRemainingForView(c, v, viewRect, inShadow);
@@ -111,7 +108,7 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
     }
     private void drawRemainingForView(Canvas c, View v, RectSpec viewRect, ShadowSpec inShadow) {
         bounds.set(0, 0, v.getWidth(), v.getHeight());
-        int alpha = (int) (v.getAlpha() * 255);
+        float alpha = v.getAlpha();
 
         c.save();
         c.translate(v.getLeft(), v.getTop());
@@ -124,7 +121,7 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
         // draw shadow above, if inner
         if (inShadow != null) {
             Shadow drawable = unsafeDrawableFor(drawables, scrap, factory, v);
-            drawShadow(c, drawable, viewRect.cornerRadius, inShadow, alpha);
+            drawShadow(c, drawable, viewRect.cornerRadius, inShadow, (int) (alpha * 255));
         }
 
         // draw stroke above inner shadow
@@ -133,32 +130,17 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
 
         c.restore();
     }
-    private void fix(ShadowSpec sh) {
-        if (Float.isNaN(sh.dx)) sh.dx = shadow.dx;
-        if (Float.isNaN(sh.dy)) sh.dy = shadow.dy;
-        if (Float.isNaN(sh.radius)) sh.radius = shadow.radius;
-        if (sh.color == 1) sh.color = shadow.color;
-    }
-    private void fix(RectSpec r) {
-        if (r.fillColor == 1) r.fillColor = rect.fillColor;
-        if (r.cornerRadius == Integer.MIN_VALUE) r.cornerRadius = rect.cornerRadius;
-        if (r.strokeColor == 1) r.strokeColor = rect.strokeColor;
-        if (Float.isNaN(r.strokeWidth)) r.strokeWidth = rect.strokeWidth;
-    }
 
-    private void fill(Canvas c, int alpha, int color, int cornerRadius) {
+    private void fill(Canvas c, float alpha, int color, int cornerRadius) {
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(withAlpha(color, alpha));
+        paint.setColor(multiplyAlpha(color, alpha));
         c.drawRoundRect(bounds, cornerRadius, cornerRadius, paint);
     }
-    private void stroke(Canvas c, int alpha, int strokeColor, float strokeWidth, int cornerRadius) {
+    private void stroke(Canvas c, float alpha, int strokeColor, float strokeWidth, int cornerRadius) {
         paint.setStyle(Paint.Style.STROKE);
-        paint.setColor(withAlpha(strokeColor, alpha));
+        paint.setColor(multiplyAlpha(strokeColor, alpha));
         paint.setStrokeWidth(strokeWidth);
         c.drawRoundRect(bounds, cornerRadius, cornerRadius, paint);
-    }
-    private static int withAlpha(int color, int alpha) {
-        return ((Color.alpha(color) * alpha / 255) << 24) | (0xFFFFFF & color);
     }
     private void drawShadow(Canvas c, Shadow drawable, int cornerRadius, ShadowSpec viewShadow, int alpha) {
         drawable.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
@@ -168,12 +150,21 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
             .draw(c);
     }
 
-    private static final RectSpec DEFAULT_RECT = new RectSpec(Color.TRANSPARENT, 0);
-    private static final ShadowSpec DEFAULT_SHADOW = new ShadowSpec(0f, 0f, 0f, Color.TRANSPARENT);
+    private RectSpec rectSpecOf(View v) {
+        RectSpec viewRect = (RectSpec) v.getTag(R.id.fiftyShades_decorRectSpec);
+        return viewRect == null ? rect : viewRect;
+    }
+    private ShadowSpec shadowSpecOf(View v) {
+        ShadowSpec viewShadow = (ShadowSpec) v.getTag(R.id.fiftyShades_decorShadowSpec);
+        return viewShadow == null ? shadow : viewShadow;
+    }
+
+    // ANIMATION
+
     static int get_(View view, int at) {
         if (at < 4) {
             RectSpec rect = (RectSpec) view.getTag(R.id.fiftyShades_decorRectSpec);
-            if (rect == null) rect = DEFAULT_RECT;
+            if (rect == null) return 0; // even floatToRawIntBits(0f) == 0
             switch (at) {
                 case 0: return rect.fillColor;
                 case 1: return rect.cornerRadius;
@@ -183,7 +174,7 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
             }
         } else {
             ShadowSpec shadow = (ShadowSpec) view.getTag(R.id.fiftyShades_decorShadowSpec);
-            if (shadow == null) shadow = DEFAULT_SHADOW;
+            if (shadow == null) return 0;
             switch (at) {
                 case 4: return floatToRawIntBits(shadow.dx);
                 case 5: return floatToRawIntBits(shadow.dy);
@@ -199,9 +190,9 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
             if (rect == null) view.setTag(R.id.fiftyShades_decorRectSpec, rect = invalidRectSpec());
             switch (at) {
                 case 0: rect.fillColor = value; break;
-                case 1: rect.cornerRadius = value; break;
+                case 1: rect.cornerRadius(value); break;
                 case 2: rect.strokeColor = value; break;
-                case 3: rect.strokeWidth = intBitsToFloat(value); break;
+                case 3: rect.strokeWidth(intBitsToFloat(value)); break;
                 default: throw new AssertionError();
             }
         } else {
@@ -220,18 +211,29 @@ import static net.aquadc.fiftyshades.ViewDrawablePool.usedMarkFor;
         // invalidateItemDecorations would invalidate offsets and relayout, we don't need this
     }
     private static RectSpec invalidRectSpec() {
-        RectSpec rect;
-        rect = new RectSpec(1, 0, 1, 0f);
+        RectSpec rect = new RectSpec(1, 0, 1, 0f);
         rect.cornerRadius = Integer.MIN_VALUE;
         rect.strokeWidth = Float.NaN;
-        return rect;
-    }
+        return rect; // Since animator properties don't know about decor,
+    } // invalid values indicate that decor should default to its own common values later.
     private static ShadowSpec invalidShadowSpec() {
         ShadowSpec shadow = new ShadowSpec(0f, 0f, 0f, 1);
         shadow.dx = Float.NaN;
         shadow.dy = Float.NaN;
         shadow.radius = Float.NaN;
         return shadow;
+    } // And here comes that 'later' when we default to common values.
+    private void fix(ShadowSpec sh) {
+        if (Float.isNaN(sh.dx)) sh.dx = shadow.dx;
+        if (Float.isNaN(sh.dy)) sh.dy = shadow.dy;
+        if (Float.isNaN(sh.radius)) sh.radius = shadow.radius;
+        if (sh.color == 1) sh.color = shadow.color;
+    }
+    private void fix(RectSpec r) {
+        if (r.fillColor == 1) r.fillColor = rect.fillColor;
+        if (r.cornerRadius == Integer.MIN_VALUE) r.cornerRadius = rect.cornerRadius;
+        if (r.strokeColor == 1) r.strokeColor = rect.strokeColor;
+        if (Float.isNaN(r.strokeWidth)) r.strokeWidth = rect.strokeWidth;
     }
 
     @RequiresApi(14) public static final Property<View, Integer> DECOR_RECT_FILL_COLOR = intProp(0, "itemRectFillColor"); // TODO maybe support DECOR_RECT_FILL_SHADER

@@ -47,6 +47,8 @@ public final class ShadowSpec {
     @ColorInt public int color() { return color; }
 
     boolean isVisible() { return (color >>> 24) != 0; }
+    boolean isZero() { return dx == 0f && dy == 0f && radius == 0f; }
+
     void dx(float dx) { this.dx = requireFinite(dx, "dx"); }
     void dy(float dy) { this.dy = requireFinite(dy, "dy"); }
     void radius(float radius) { this.radius = requireNonNegative(radius, "radius"); }

@@ -27,9 +27,9 @@ public final class RectSpec {
      */
     public RectSpec(@ColorInt int fillColor, @Px int cornerRadius, @ColorInt int strokeColor, @Px float strokeWidth) {
         this.fillColor = fillColor;
-        this.cornerRadius = requireNonNegative(cornerRadius, "cornerRadius");
+        cornerRadius(cornerRadius);
         this.strokeColor = strokeColor;
-        this.strokeWidth = requireNonNegative(strokeWidth, "strokeWidth");
+        strokeWidth(strokeWidth);
     }
 
     /**
@@ -47,7 +47,15 @@ public final class RectSpec {
     @Px public float strokeWidth() { return strokeWidth; }
 
     boolean hasFill() { return (fillColor >>> 24) != 0; }
+    boolean isOpaque() { return (fillColor >>> 24) == 0xFF; }
     boolean hasStroke() { return (strokeColor >>> 24) != 0 && strokeWidth > 0f; }
+
+    void cornerRadius(@Px int cornerRadius) {
+        this.cornerRadius = requireNonNegative(cornerRadius, "cornerRadius");
+    }
+    void strokeWidth(@Px float strokeWidth) {
+        this.strokeWidth = requireNonNegative(strokeWidth, "strokeWidth");
+    }
 
     @Override public boolean equals(Object o) {
         RectSpec that;
